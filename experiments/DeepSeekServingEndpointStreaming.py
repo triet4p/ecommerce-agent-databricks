@@ -69,8 +69,8 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-dbutils.widgets.text("catalog", "main", "UC catalog")
-dbutils.widgets.text("schema", "default", "UC schema")
+dbutils.widgets.text("catalog", "workspace", "UC catalog")
+dbutils.widgets.text("schema", "gold_layer", "UC schema")
 dbutils.widgets.text(
     "registered_model_basename",
     "deepseek_v4_streaming_agent",
@@ -540,13 +540,12 @@ try:
     w.serving_endpoints.get(name=endpoint_name)
 except NotFound:
     print(f"Creating endpoint {endpoint_name!r}.")
-    endpoint = w.serving_endpoints.create_and_wait(
+    endpoint = w.serving_endpoints.create(
         name=endpoint_name,
         config=EndpointCoreConfigInput(
             name=endpoint_name,
             served_entities=[served_entity],
         ),
-        timeout=timedelta(minutes=30),
     )
 else:
     print(f"Updating endpoint {endpoint_name!r}.")
@@ -564,16 +563,6 @@ else:
             )
         ],
     )
-    endpoint = update_waiter.result(timeout=timedelta(minutes=30))
-
-print(
-    "Endpoint deployment completed:",
-    {
-        "name": endpoint.name,
-        "ready": str(endpoint.state.ready) if endpoint.state else None,
-        "config_update": str(endpoint.state.config_update) if endpoint.state else None,
-    },
-)
 
 # COMMAND ----------
 
