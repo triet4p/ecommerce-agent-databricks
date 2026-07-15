@@ -44,7 +44,7 @@ patterns to become production fallbacks.
 
 ## Active Sprints
 
-- [Sprint 1](sprint-plans/sprint-1.md) - *Status: Not Started*
+- [Sprint 1](sprint-plans/sprint-1.md) - *Status: In Progress — DeepSeek/ChatDatabricks serverless lab verified; core implementation tasks remain*
 
 ## Documentation and Certification Index
 

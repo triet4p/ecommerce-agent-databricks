@@ -228,6 +228,21 @@ Status legend: [ ] pending / [~] in progress / [x] done
 - [ ] **I8:** Add a concise current-versus-superseded API matrix; superseded APIs
   may be explained but must not be executable dependencies of production code.
 
+### J. Verify the DeepSeek/ChatDatabricks serving experiment
+
+- [x] **J1:** Authenticate from the local workspace, verify serverless execution,
+  and confirm the experiment uses the fixed Unity Catalog catalog `workspace`
+  without exposing credentials.
+- [x] **J2:** Reproduce and classify the five-minute SDK endpoint-creation timeout
+  using control-plane status and debug evidence.
+- [x] **J3:** Reproduce the final-cell failure against a ready endpoint and capture
+  both client traceback and served-model logs.
+- [x] **J4:** Fix the endpoint lifecycle and Responses/DeepSeek reasoning adapter,
+  then extend local contract tests for the discovered causes.
+- [x] **J5:** Deploy the corrected model version, run the two-turn
+  `ChatDatabricks` tool-call stream on serverless compute, and record whether
+  streaming and `reasoning_content` round-trip succeed.
+
 ## Notes / Blockers
 
 - Managed MCP is the current Databricks recommendation and is explicitly covered
@@ -248,6 +263,11 @@ Status legend: [ ] pending / [~] in progress / [x] done
   source of truth for every policy condition.
 - Databricks integration tests require workspace authentication and provisioned
   resources; local import success is not an integration test.
+- DeepSeek serving verification completed on 2026-07-15 using catalog `workspace`,
+  registered model version 4, and endpoint config 5. Serverless run
+  `843390409034780` succeeded with 33/28 stream chunks/text deltas on turn 1 and
+  140/135 on turn 2; both turns contained one tool call and one reasoning
+  round-trip.
 
 ## Official References Reviewed
 

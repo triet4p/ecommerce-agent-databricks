@@ -105,6 +105,8 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
             "use_responses_api=True",
             "chat_databricks.bind_tools(",
             "request.tools",
+            "DeepSeek V4 thinking mode rejects the tool_choice parameter",
+            "chat_model.bind_tools(tools, **bind_options)",
             "self.create_reasoning_item(",
             'message["reasoning_content"]',
         )
@@ -119,6 +121,34 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
         )
         self.assertNotIn("sk-", self.source)
 
+    def test_catalog_and_endpoint_readiness_are_enforced(self) -> None:
+        required_fragments = (
+            'dbutils.widgets.text("catalog", "workspace", "UC catalog")',
+            'assert CATALOG == "workspace"',
+            ").result(\n            timeout=timedelta(minutes=30)",
+            "wait_get_serving_endpoint_not_updating(",
+            'existing_endpoint.state.config_update).endswith("NOT_UPDATING")',
+            "already has an update in progress",
+            'assert "DEEPSEEK_API_KEY" in (active_entity.environment_vars or {})',
+            'str(endpoint.state.ready).endswith("READY")',
+        )
+        for fragment in required_fragments:
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, self.source)
+
+    def test_model_signature_accepts_runtime_function_tools(self) -> None:
+        required_fragments = (
+            "RESPONSES_AGENT_INPUT_SCHEMA",
+            "RESPONSES_AGENT_OUTPUT_SCHEMA",
+            "def responses_agent_signature_with_runtime_tools()",
+            'ColSpec(Array(AnyType()), name="tools", required=False)',
+            "mlflow.models.set_signature(",
+            'assert str(tools_column.type) == "Array(Any)"',
+        )
+        for fragment in required_fragments:
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, self.source)
+
     def test_rejects_retiring_deepseek_aliases(self) -> None:
         self.assertIn(
             'legacy_model_aliases = {"deepseek-chat", "deepseek-reasoner"}',
@@ -128,6 +158,7 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
 
     def test_stream_success_contract_is_executable(self) -> None:
         required_fragments = (
+            "tool_model = chat_databricks.bind_tools([lookup_order_total])",
             "turn_1 = run_tool_turn(",
             "turn_2 = run_tool_turn(",
             'assert reasoning_tool_rounds > 0',
@@ -139,6 +170,9 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
         for fragment in required_fragments:
             with self.subTest(fragment=fragment):
                 self.assertIn(fragment, self.source)
+
+        self.assertNotIn('tool_choice="required"', self.source)
+        self.assertNotIn('tool_choice="auto"', self.source)
 
     def test_does_not_bypass_chatdatabricks_in_final_test(self) -> None:
         self.assertNotIn("DatabricksOpenAI", self.source)

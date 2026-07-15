@@ -20,10 +20,12 @@
 # MAGIC   it from `{{secrets/API_KEY/DEEPSEEK_API_KEY}}` at runtime.
 # MAGIC - A `Small` endpoint with scale-to-zero still incurs Databricks Model
 # MAGIC   Serving compute charges while active and has cold-start latency.
-# MAGIC - The final test performs two user turns. Each turn forces a tool call,
-# MAGIC   streams the endpoint response, sends the tool result back, and requires
-# MAGIC   a final answer. This exercises the exact `reasoning_content` round-trip
-# MAGIC   that produces DeepSeek's 400 error when an adapter drops it.
+# MAGIC - The final test performs two user turns. Each prompt explicitly asks for
+# MAGIC   a tool call, streams the endpoint response, sends the tool result back,
+# MAGIC   and asserts both the call and a final answer. DeepSeek V4 thinking mode
+# MAGIC   rejects the `tool_choice` parameter, so the test must not force it at the
+# MAGIC   protocol level. This still exercises the exact `reasoning_content`
+# MAGIC   round-trip that produces a 400 error when an adapter drops it.
 # MAGIC
 # MAGIC Current references (reviewed 2026-07-15):
 # MAGIC
@@ -96,6 +98,12 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.errors import NotFound
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput
 from langchain.chat_models import init_chat_model
+from mlflow.models import ModelSignature
+from mlflow.types.responses import (
+    RESPONSES_AGENT_INPUT_SCHEMA,
+    RESPONSES_AGENT_OUTPUT_SCHEMA,
+)
+from mlflow.types.schema import AnyType, Array, ColSpec, Schema
 
 CATALOG = dbutils.widgets.get("catalog").strip()
 SCHEMA = dbutils.widgets.get("schema").strip()
@@ -119,6 +127,10 @@ required_values = {
 }
 missing = [name for name, value in required_values.items() if not value]
 assert not missing, f"Empty required widgets: {missing}"
+assert CATALOG == "workspace", (
+    "This experiment is intentionally pinned to the 'workspace' catalog. "
+    "Do not deploy the lab model into another catalog."
+)
 
 legacy_model_aliases = {"deepseek-chat", "deepseek-reasoner"}
 assert DEEPSEEK_MODEL not in legacy_model_aliases, (
@@ -210,6 +222,15 @@ print(
 # MAGIC - emits DeepSeek reasoning as a Responses reasoning item;
 # MAGIC - reconstructs that item as `reasoning_content` on the next DeepSeek call;
 # MAGIC - streams visible answer text without printing reasoning text.
+# MAGIC
+# MAGIC MLflow 3.14's standard `ResponsesAgent` signature describes each runtime
+# MAGIC tool only as `{type: string}` even though the Pydantic `Tool` accepts the
+# MAGIC function fields `name`, `description`, and `parameters`. Model Serving
+# MAGIC enforces the serialized signature before invoking Python, so a
+# MAGIC `ChatDatabricks.bind_tools(...)` request otherwise fails with HTTP 400.
+# MAGIC After logging, this notebook widens only the `tools` column to
+# MAGIC `Array(Any)`; request validation inside `ResponsesAgentRequest` remains the
+# MAGIC source of truth for the actual tool payload.
 
 # COMMAND ----------
 
@@ -382,11 +403,16 @@ class DeepSeekStreamingAgent(ResponsesAgent):
             tool_choice = request.tool_choice
             if hasattr(tool_choice, "model_dump"):
                 tool_choice = tool_choice.model_dump(exclude_none=True)
-            chat_model = chat_model.bind_tools(
-                tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=request.parallel_tool_calls,
-            )
+            if tool_choice is not None:
+                raise ValueError(
+                    "DeepSeek V4 thinking mode rejects the tool_choice parameter. "
+                    "Bind tools without tool_choice and state the tool requirement "
+                    "in the prompt."
+                )
+            bind_options = {}
+            if request.parallel_tool_calls is not None:
+                bind_options["parallel_tool_calls"] = request.parallel_tool_calls
+            chat_model = chat_model.bind_tools(tools, **bind_options)
 
         item_id = f"msg_{uuid4().hex}"
         reasoning_id = f"rs_{uuid4().hex}"
@@ -464,6 +490,19 @@ print(f"Generated model source: {agent_source_path}")
 
 mlflow.set_registry_uri("databricks-uc")
 
+
+def responses_agent_signature_with_runtime_tools() -> ModelSignature:
+    """Keep the standard ResponsesAgent contract but allow full runtime tools."""
+    inputs = Schema(
+        [
+            ColSpec(Array(AnyType()), name="tools", required=False)
+            if column.name == "tools"
+            else column
+            for column in RESPONSES_AGENT_INPUT_SCHEMA.inputs
+        ]
+    )
+    return ModelSignature(inputs=inputs, outputs=RESPONSES_AGENT_OUTPUT_SCHEMA)
+
 input_example = {
     "input": [
         {
@@ -486,8 +525,16 @@ with mlflow.start_run(run_name="deepseek-v4-responses-streaming-lab"):
         ],
     )
 
+mlflow.models.set_signature(
+    logged_model.model_uri,
+    responses_agent_signature_with_runtime_tools(),
+)
 model_info = mlflow.models.get_model_info(logged_model.model_uri)
 assert model_info.signature is not None, "MLflow did not record a model signature."
+tools_column = next(
+    column for column in model_info.signature.inputs.inputs if column.name == "tools"
+)
+assert str(tools_column.type) == "Array(Any)", tools_column
 print("MLflow ResponsesAgent signature:", model_info.signature)
 
 registered_model = mlflow.register_model(
@@ -516,6 +563,12 @@ print(
 # MAGIC This is the cost-incurring step. Set the `deploy_endpoint` widget to
 # MAGIC `true` and rerun from the configuration cell. For an existing endpoint,
 # MAGIC the required `update_config` call replaces its served-entity list.
+# MAGIC
+# MAGIC Model image builds commonly take longer than five minutes. `create()` and
+# MAGIC `update_config()` return SDK waiters; submitting the request is not proof
+# MAGIC that the endpoint is queryable. This cell waits up to 30 minutes, reports
+# MAGIC status transitions, and verifies that the secret reference is present in
+# MAGIC the active served-entity configuration before the ChatDatabricks test runs.
 
 # COMMAND ----------
 
@@ -536,33 +589,95 @@ served_entity = ServedEntityInput(
     },
 )
 
+
+def report_endpoint_status(endpoint) -> None:
+    state = endpoint.state
+    print(
+        "Endpoint status:",
+        {
+            "ready": str(state.ready),
+            "config_update": str(state.config_update),
+        },
+    )
+
+
+def wait_after_create_timeout(create_timeout: TimeoutError):
+    """Recover when create reached Databricks but the client timed out waiting."""
+    try:
+        w.serving_endpoints.get(name=endpoint_name)
+    except NotFound:
+        raise create_timeout
+
+    print(
+        "The create call timed out, but the endpoint now exists. "
+        "Continuing with server-side readiness polling."
+    )
+    return w.serving_endpoints.wait_get_serving_endpoint_not_updating(
+        name=endpoint_name,
+        timeout=timedelta(minutes=30),
+        callback=report_endpoint_status,
+    )
+
+
 try:
-    w.serving_endpoints.get(name=endpoint_name)
+    existing_endpoint = w.serving_endpoints.get(name=endpoint_name)
 except NotFound:
     print(f"Creating endpoint {endpoint_name!r}.")
-    endpoint = w.serving_endpoints.create(
-        name=endpoint_name,
-        config=EndpointCoreConfigInput(
+    try:
+        endpoint = w.serving_endpoints.create(
             name=endpoint_name,
-            served_entities=[served_entity],
-        ),
-    )
+            config=EndpointCoreConfigInput(
+                name=endpoint_name,
+                served_entities=[served_entity],
+            ),
+        ).result(
+            timeout=timedelta(minutes=30),
+            callback=report_endpoint_status,
+        )
+    except TimeoutError as create_timeout:
+        endpoint = wait_after_create_timeout(create_timeout)
 else:
+    if not str(existing_endpoint.state.config_update).endswith("NOT_UPDATING"):
+        print(
+            f"Endpoint {endpoint_name!r} already has an update in progress; "
+            "waiting before submitting this model version."
+        )
+        w.serving_endpoints.wait_get_serving_endpoint_not_updating(
+            name=endpoint_name,
+            timeout=timedelta(minutes=30),
+            callback=report_endpoint_status,
+        )
     print(f"Updating endpoint {endpoint_name!r}.")
-    update_waiter = w.serving_endpoints.update_config(
+    endpoint = w.serving_endpoints.update_config(
         name=endpoint_name,
-        served_entities=[
-            ServedEntityInput(
-                entity_name=model_name,
-                entity_version=model_version,
-                workload_size="Small",
-                scale_to_zero_enabled=True,
-                environment_vars={
-                    "DEEPSEEK_API_KEY": "{{secrets/API_KEY/DEEPSEEK_API_KEY}}",
-                },
-            )
-        ],
+        served_entities=[served_entity],
+    ).result(
+        timeout=timedelta(minutes=30),
+        callback=report_endpoint_status,
     )
+
+assert str(endpoint.state.ready).endswith("READY"), endpoint.state
+assert str(endpoint.state.config_update).endswith("NOT_UPDATING"), endpoint.state
+
+active_entity = next(
+    entity
+    for entity in endpoint.config.served_entities
+    if entity.entity_name == model_name and str(entity.entity_version) == model_version
+)
+assert "DEEPSEEK_API_KEY" in (active_entity.environment_vars or {}), (
+    "The active served entity has no DEEPSEEK_API_KEY secret reference. "
+    "A model created through the UI must be updated with the notebook config."
+)
+
+print(
+    "Endpoint is queryable with the expected served entity:",
+    {
+        "endpoint": endpoint_name,
+        "model": model_name,
+        "version": model_version,
+        "secret_env_present": True,
+    },
+)
 
 # COMMAND ----------
 
@@ -570,8 +685,9 @@ else:
 # MAGIC ## 5. Query through ChatDatabricks and verify reasoning round-trip
 # MAGIC
 # MAGIC `ChatDatabricks(use_responses_api=True)` is the actual model adapter under
-# MAGIC test. The code forces one tool call on each of two user turns. Each turn
-# MAGIC therefore requires at least two endpoint/DeepSeek calls:
+# MAGIC test. The code asks for and asserts one tool call on each of two user turns.
+# MAGIC It intentionally omits `tool_choice`, which DeepSeek V4 thinking mode
+# MAGIC rejects. Each turn therefore requires at least two endpoint/DeepSeek calls:
 # MAGIC
 # MAGIC `user -> reasoning + tool call -> tool result -> reasoning + final answer`
 # MAGIC
@@ -614,14 +730,7 @@ chat_databricks = ChatDatabricks(
     max_retries=3,
     stream_usage=True,
 )
-tool_model_required = chat_databricks.bind_tools(
-    [lookup_order_total],
-    tool_choice="required",
-)
-tool_model_auto = chat_databricks.bind_tools(
-    [lookup_order_total],
-    tool_choice="auto",
-)
+tool_model = chat_databricks.bind_tools([lookup_order_total])
 
 
 def content_block_count(message, block_type: str) -> int:
@@ -669,17 +778,14 @@ def run_tool_turn(history: list, question: str) -> dict[str, Any]:
     reasoning_tool_rounds = 0
     total_chunks = 0
     visible_deltas = 0
-    tool_already_called = False
 
     for _ in range(6):
-        active_model = tool_model_auto if tool_already_called else tool_model_required
-        ai_message, chunk_count, delta_count = stream_message(active_model, history)
+        ai_message, chunk_count, delta_count = stream_message(tool_model, history)
         history.append(ai_message)
         total_chunks += chunk_count
         visible_deltas += delta_count
 
         if ai_message.tool_calls:
-            tool_already_called = True
             tool_calls += len(ai_message.tool_calls)
             if content_block_count(ai_message, "reasoning") > 0:
                 reasoning_tool_rounds += 1
@@ -746,6 +852,12 @@ print(
 # MAGIC - `400` mentioning `reasoning_content`: the experiment has reproduced the
 # MAGIC   adapter failure. Inspect the last tool-call AI message and confirm that it
 # MAGIC   contains a `reasoning` content block before the tool result is appended.
+# MAGIC - `400` saying thinking mode does not support `tool_choice`: bind tools
+# MAGIC   without `required`, `auto`, or a named choice. DeepSeek V4 thinking mode
+# MAGIC   decides tool use from the prompt and tool descriptions.
+# MAGIC - `400` saying tool properties `name`, `description`, or `parameters` are
+# MAGIC   not defined in the schema: the deployed model predates the
+# MAGIC   `Array(Any)` runtime-tools signature; log and deploy a new model version.
 # MAGIC - Tool call succeeds but `reasoning_tool_rounds == 0`: streaming works, but
 # MAGIC   the route has not preserved DeepSeek's thinking payload and is unsafe for
 # MAGIC   the intended thinking-mode agent loop.
