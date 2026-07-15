@@ -1,0 +1,5 @@
+command: ["streamlit", "run", "app.py"]
+
+env:
+  - name: AGENT_APP_URL
+    value: https://ecommerce-support-agent-app.databricksapps.com

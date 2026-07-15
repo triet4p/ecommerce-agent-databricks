@@ -1,0 +1,7 @@
+command: ["uvicorn", "projects.ecommerce_support.agent_app.server:app", "--host", "0.0.0.0", "--port", "8000"]
+
+env:
+  - name: MLFLOW_TRACKING_URI
+    value: databricks
+  - name: MLFLOW_REGISTRY_URI
+    value: databricks-uc
