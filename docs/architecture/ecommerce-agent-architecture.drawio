@@ -1,0 +1,247 @@
+<mxfile host="app.diagrams.net" modified="2026-07-15T00:00:00.000Z" agent="Codex" version="26.0.9" type="device" compressed="false">
+  <diagram id="production-runtime" name="1 - Production Runtime">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p1-title" value="E-commerce Support Agent — Production Runtime" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#0B2026;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1720" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-subtitle" value="Target v0.1 • Databricks Apps + MLflow ResponsesAgent + LangChain 1.x • no legacy or automatic fallback" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52656A;" vertex="1" parent="1">
+          <mxGeometry x="42" y="62" width="1600" height="28" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-user" value="&lt;b&gt;Authenticated user&lt;/b&gt;&lt;br&gt;Web / API client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="180" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-user-icon" value="U" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0B2026;strokeColor=#0B2026;fontColor=#FFFFFF;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="55" y="160" width="34" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-optional-clients" value="&lt;b&gt;Optional clients&lt;/b&gt;&lt;br&gt;Chat UI App&lt;br&gt;Custom MCP facade App&lt;br&gt;&lt;font color=&quot;#52656A&quot;&gt;App-to-App OAuth + CAN_USE&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=14;align=left;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="40" y="285" width="180" height="145" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-app-boundary" value="&lt;b&gt;DATABRICKS APP — ecommerce-support-agent&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#52656A&quot;&gt;Serverless application runtime • App service principal&lt;/font&gt;" style="swimlane;html=1;rounded=1;startSize=62;horizontal=1;fillColor=#F9F7F4;swimlaneFillColor=#EEEDE9;strokeColor=#FF3621;strokeWidth=3;fontColor=#0B2026;fontSize=17;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="270" y="105" width="760" height="650" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-app-glyph" value="▰" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF3621;strokeColor=#FF3621;fontColor=#FFFFFF;fontStyle=1;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="970" y="120" width="38" height="38" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-agentserver" value="&lt;b&gt;MLflow AgentServer&lt;/b&gt;&lt;br&gt;/responses invoke + stream" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="310" y="200" width="190" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-responses" value="&lt;b&gt;CoreAgent&lt;/b&gt;&lt;br&gt;MLflow ResponsesAgent&lt;br&gt;request + event adapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="545" y="200" width="190" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-langchain" value="&lt;b&gt;LangChain create_agent&lt;/b&gt;&lt;br&gt;tool-calling loop&lt;br&gt;ChatDatabricks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="780" y="200" width="205" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-prompt-box" value="&lt;b&gt;PROMPT CONTEXT&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=38;horizontal=1;fillColor=#FFFFFF;swimlaneFillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=15;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="345" width="310" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-base-prompt" value="&lt;b&gt;Base prompt&lt;/b&gt;&lt;br&gt;config fallback or Prompt Registry @alias" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#1B6B8F;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="335" y="405" width="260" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-rules" value="&lt;b&gt;Rules — always loaded&lt;/b&gt;&lt;br&gt;ecommerce_agent/rules/*.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#1B6B8F;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="335" y="490" width="260" height="65" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-skills" value="&lt;b&gt;Skills — progressive disclosure&lt;/b&gt;&lt;br&gt;ecommerce_agent/skills/*.md&lt;br&gt;list_skills → load_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#1B6B8F;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="335" y="575" width="260" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-tools-box" value="&lt;b&gt;TOOL ROUTER&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=38;horizontal=1;fillColor=#FFFFFF;swimlaneFillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=15;fontStyle=1;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="660" y="345" width="325" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-local-tools" value="&lt;b&gt;Local deterministic tools&lt;/b&gt;&lt;br&gt;delay severity • customer value&lt;br&gt;skill list/load" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#FF3621;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="685" y="405" width="275" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-mcp-client" value="&lt;b&gt;Managed MCP client&lt;/b&gt;&lt;br&gt;explicit UC function allowlist&lt;br&gt;async lifecycle; no fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#FF3621;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="685" y="495" width="275" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-search-tool" value="&lt;b&gt;search_policy_docs&lt;/b&gt;&lt;br&gt;thin typed serving adapter&lt;br&gt;source-safe output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#FF3621;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="685" y="585" width="275" height="65" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-model" value="&lt;b&gt;Foundation Model API / LLM endpoint&lt;/b&gt;&lt;br&gt;ChatDatabricks&lt;br&gt;&lt;font color=&quot;#52656A&quot;&gt;AI Gateway: permissions, rate limits, usage, inference tables&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#FF3621;strokeWidth=3;fontColor=#FFFFFF;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="150" width="300" height="125" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-model-glyph" value="AI" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF3621;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=15;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="170" width="42" height="42" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-managed-mcp" value="&lt;b&gt;Databricks managed MCP server&lt;/b&gt;&lt;br&gt;Unity Catalog functions transport&lt;br&gt;workspace feature + OAuth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="390" width="300" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-mcp-glyph" value="MCP" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#1B6B8F;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="410" width="44" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-uc-functions" value="&lt;b&gt;Unity Catalog Functions&lt;/b&gt;&lt;br&gt;&lt;b&gt;SQL:&lt;/b&gt; order • history • seller • shipping&lt;br&gt;&lt;b&gt;Python:&lt;/b&gt; refund eligibility&lt;br&gt;&lt;font color=&quot;#52656A&quot;&gt;Governed business contracts&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;align=left;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="1470" y="375" width="280" height="135" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-uc-glyph" value="UC" style="hexagon;whiteSpace=wrap;html=1;fillColor=#FF3621;strokeColor=#FF3621;fontColor=#FFFFFF;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="395" width="48" height="44" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-reranker" value="&lt;b&gt;Search-and-rerank endpoint&lt;/b&gt;&lt;br&gt;AI Search query + filters&lt;br&gt;custom reranker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="585" width="300" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-search-glyph" value="⌕" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF3621;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=24;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="605" width="44" height="44" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-ai-search" value="&lt;b&gt;Mosaic AI Search index&lt;/b&gt;&lt;br&gt;policy chunks + metadata&lt;br&gt;Delta Sync index" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1470" y="585" width="280" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-governance" value="&lt;b&gt;UNITY CATALOG GOVERNANCE PLANE&lt;/b&gt;&lt;br&gt;catalog/schema grants • App identity • lineage • audit • tables • volumes • functions • vector index" style="swimlane;html=1;rounded=1;startSize=46;horizontal=1;fillColor=#FFFFFF;swimlaneFillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=3;fontColor=#0B2026;fontSize=16;fontStyle=1;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="270" y="815" width="1480" height="185" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-gold" value="&lt;b&gt;Gold Delta tables&lt;/b&gt;&lt;br&gt;orders • customers • sellers&lt;br&gt;shipping • policy matrix" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="335" y="890" width="250" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-policy-store" value="&lt;b&gt;Policy document assets&lt;/b&gt;&lt;br&gt;UC Volume + Delta chunk table" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="625" y="890" width="250" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-mlflow" value="&lt;b&gt;MLflow GenAI observability&lt;/b&gt;&lt;br&gt;tracing • eval datasets • scorers • SME feedback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="950" y="890" width="330" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1-inference" value="&lt;b&gt;AI Gateway evidence&lt;/b&gt;&lt;br&gt;inference tables • usage • cost • rate controls" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="890" width="360" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-compat" value="&lt;b&gt;Explicit compatibility target / cert lab&lt;/b&gt;&lt;br&gt;top-level UCFunctionToolkit&lt;br&gt;&lt;font color=&quot;#8C4A00&quot;&gt;Never an automatic MCP fallback&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D79B00;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="715" width="300" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1-e-user-app" value="/responses" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p1-user" target="p1-agentserver"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-optional" value="OAuth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#87999D;strokeWidth=2;dashed=1;fontColor=#52656A;" edge="1" parent="1" source="p1-optional-clients" target="p1-agentserver"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-server-responses" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p1-agentserver" target="p1-responses"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-responses-langchain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p1-responses" target="p1-langchain"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-prompt-langchain" value="system prompt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p1-prompt-box" target="p1-langchain"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-langchain-tools" value="select / call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p1-langchain" target="p1-tools-box"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-langchain-model" value="chat + tool schemas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p1-langchain" target="p1-model"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-mcp" value="MCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p1-mcp-client" target="p1-managed-mcp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-mcp-func" value="execute allowlist" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p1-managed-mcp" target="p1-uc-functions"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-search-rerank" value="typed query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p1-search-tool" target="p1-reranker"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-rerank-index" value="over-fetch + filters" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p1-reranker" target="p1-ai-search"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-func-gold" value="governed reads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p1-uc-functions" target="p1-gold"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-index-policy" value="Delta Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p1-policy-store" target="p1-ai-search"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-trace" value="traces + eval" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;dashed=1;fontColor=#1B6B8F;" edge="1" parent="1" source="p1-responses" target="p1-mlflow"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-model-evidence" value="usage + inference" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;dashed=1;fontColor=#B42412;" edge="1" parent="1" source="p1-model" target="p1-inference"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p1-e-compat-func" value="explicit target only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#D79B00;strokeWidth=2;dashed=1;fontColor=#8C4A00;" edge="1" parent="1" source="p1-compat" target="p1-uc-functions"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="p1-legend" value="&lt;b&gt;Legend&lt;/b&gt;  ━ production request/dependency    &lt;font color=&quot;#1B6B8F&quot;&gt;┅ deployment/observability&lt;/font&gt;    &lt;font color=&quot;#87999D&quot;&gt;┅ optional/future&lt;/font&gt;    &lt;font color=&quot;#D79B00&quot;&gt;┅ compatibility/cert lab&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;fontColor=#0B2026;fontSize=13;align=left;spacingLeft=14;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1040" width="1480" height="55" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="data-delivery" name="2 - Data and Delivery">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p2-title" value="E-commerce Support Agent — Data, Delivery and Identity" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#0B2026;" vertex="1" parent="1"><mxGeometry x="40" y="20" width="1720" height="45" as="geometry"/></mxCell>
+        <mxCell id="p2-subtitle" value="Source-controlled behavior • governed operational data • environment-aware namespace • least-privilege Apps" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52656A;" vertex="1" parent="1"><mxGeometry x="42" y="62" width="1600" height="28" as="geometry"/></mxCell>
+
+        <mxCell id="p2-source-box" value="&lt;b&gt;SOURCE AND RELEASE&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=44;horizontal=1;fillColor=#FFFFFF;swimlaneFillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=16;fontStyle=1;align=left;spacingLeft=14;" vertex="1" parent="1"><mxGeometry x="40" y="120" width="380" height="450" as="geometry"/></mxCell>
+        <mxCell id="p2-git" value="&lt;b&gt;Git repository&lt;/b&gt;&lt;br&gt;agent_core/ — use-case independent&lt;br&gt;ecommerce_agent/ — product module&lt;br&gt;tests/ • labs/ • docs/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;fontColor=#0B2026;fontSize=14;align=left;spacingLeft=16;" vertex="1" parent="1"><mxGeometry x="70" y="190" width="320" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-behavior" value="&lt;b&gt;Versioned agent behavior&lt;/b&gt;&lt;br&gt;config.yaml&lt;br&gt;rules/*.md — always loaded&lt;br&gt;skills/*.md — progressive disclosure" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;fontColor=#0B2026;fontSize=14;align=left;spacingLeft=16;" vertex="1" parent="1"><mxGeometry x="70" y="320" width="320" height="115" as="geometry"/></mxCell>
+        <mxCell id="p2-lock" value="&lt;b&gt;Dependency contract&lt;/b&gt;&lt;br&gt;pyproject.toml + uv.lock&lt;br&gt;Python 3.13 • LangChain 1.x&lt;br&gt;SDK 0.120.0 • MLflow 3.x" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1"><mxGeometry x="70" y="460" width="320" height="80" as="geometry"/></mxCell>
+
+        <mxCell id="p2-dab" value="&lt;b&gt;Declarative Automation Bundle&lt;/b&gt;&lt;br&gt;dev / prod targets&lt;br&gt;validate → deploy → smoke test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF3621;strokeColor=#B42412;strokeWidth=2;fontColor=#FFFFFF;fontSize=15;" vertex="1" parent="1"><mxGeometry x="500" y="250" width="270" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-dab-glyph" value="DAB" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#FFFFFF;fontColor=#FF3621;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="520" y="270" width="42" height="42" as="geometry"/></mxCell>
+
+        <mxCell id="p2-apps-box" value="&lt;b&gt;DATABRICKS APPS&lt;/b&gt;" style="swimlane;html=1;rounded=1;startSize=44;horizontal=1;fillColor=#FFFFFF;swimlaneFillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=3;fontColor=#0B2026;fontSize=16;fontStyle=1;align=left;spacingLeft=14;" vertex="1" parent="1"><mxGeometry x="850" y="120" width="900" height="450" as="geometry"/></mxCell>
+        <mxCell id="p2-agent-app" value="&lt;b&gt;Agent App — required&lt;/b&gt;&lt;br&gt;AgentServer + ResponsesAgent&lt;br&gt;create_agent + ChatDatabricks&lt;br&gt;packaged rules and skills" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#FF3621;strokeWidth=3;fontColor=#FFFFFF;fontSize=15;" vertex="1" parent="1"><mxGeometry x="900" y="205" width="275" height="135" as="geometry"/></mxCell>
+        <mxCell id="p2-ui-app" value="&lt;b&gt;Chat UI App — optional&lt;/b&gt;&lt;br&gt;thin end-user client&lt;br&gt;no agent logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1240" y="205" width="210" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-mcp-app" value="&lt;b&gt;Custom MCP facade — optional&lt;/b&gt;&lt;br&gt;exposes whole agent as one tool&lt;br&gt;inbound integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1490" y="205" width="220" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-app-id" value="&lt;b&gt;Per-App service principal&lt;/b&gt;&lt;br&gt;OAuth • CAN_USE • resource grants&lt;br&gt;No static tokens in source" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1040" y="405" width="480" height="90" as="geometry"/></mxCell>
+
+        <mxCell id="p2-structured-source" value="&lt;b&gt;Olist source files&lt;/b&gt;&lt;br&gt;structured commerce data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="40" y="690" width="210" height="80" as="geometry"/></mxCell>
+        <mxCell id="p2-doc-source" value="&lt;b&gt;Policy documents&lt;/b&gt;&lt;br&gt;PDF / text / metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="40" y="860" width="210" height="80" as="geometry"/></mxCell>
+        <mxCell id="p2-volume" value="&lt;b&gt;UC Volumes — raw operational assets&lt;/b&gt;&lt;br&gt;source data and unstructured documents&lt;br&gt;&lt;font color=&quot;#52656A&quot;&gt;not application rules/skills&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="315" y="735" width="260" height="135" as="geometry"/></mxCell>
+        <mxCell id="p2-volume-glyph" value="V" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0B2026;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=15;" vertex="1" parent="1"><mxGeometry x="340" y="760" width="42" height="42" as="geometry"/></mxCell>
+        <mxCell id="p2-pipeline" value="&lt;b&gt;Lakeflow Jobs / processing&lt;/b&gt;&lt;br&gt;ingest • validate • transform&lt;br&gt;parse • normalize • chunk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FF3621;strokeColor=#B42412;strokeWidth=2;fontColor=#FFFFFF;fontSize=14;" vertex="1" parent="1"><mxGeometry x="650" y="735" width="240" height="125" as="geometry"/></mxCell>
+
+        <mxCell id="p2-bronze" value="&lt;b&gt;BRONZE Δ&lt;/b&gt;&lt;br&gt;raw Delta tables&lt;br&gt;source fidelity" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#CD7F32;strokeColor=#8C4A00;strokeWidth=2;fontColor=#FFFFFF;fontSize=14;" vertex="1" parent="1"><mxGeometry x="970" y="680" width="190" height="100" as="geometry"/></mxCell>
+        <mxCell id="p2-silver" value="&lt;b&gt;SILVER Δ&lt;/b&gt;&lt;br&gt;validated entities&lt;br&gt;clean contracts" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#D9E1E8;strokeColor=#6C7A89;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1220" y="680" width="190" height="100" as="geometry"/></mxCell>
+        <mxCell id="p2-gold" value="&lt;b&gt;GOLD Δ&lt;/b&gt;&lt;br&gt;agent-ready tables&lt;br&gt;policy matrix" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#FFD966;strokeColor=#D79B00;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1470" y="680" width="200" height="100" as="geometry"/></mxCell>
+
+        <mxCell id="p2-chunks" value="&lt;b&gt;Policy chunk Δ table&lt;/b&gt;&lt;br&gt;content • source • metadata&lt;br&gt;stable document identity" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="970" y="865" width="240" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-index" value="&lt;b&gt;Mosaic AI Search&lt;/b&gt;&lt;br&gt;Delta Sync vector index&lt;br&gt;filters + hybrid retrieval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1280" y="865" width="240" height="105" as="geometry"/></mxCell>
+        <mxCell id="p2-reranker" value="&lt;b&gt;Reranker endpoint&lt;/b&gt;&lt;br&gt;typed search contract&lt;br&gt;quality-gated" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1575" y="865" width="175" height="105" as="geometry"/></mxCell>
+
+        <mxCell id="p2-uc-band" value="&lt;b&gt;UNITY CATALOG&lt;/b&gt; — one environment-aware namespace contract • grants • lineage • audit • discovery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#0B2026;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=left;spacingLeft=16;" vertex="1" parent="1"><mxGeometry x="315" y="1030" width="1435" height="60" as="geometry"/></mxCell>
+        <mxCell id="p2-uc-band-glyph" value="UC" style="hexagon;whiteSpace=wrap;html=1;fillColor=#FF3621;strokeColor=#FFFFFF;strokeWidth=2;fontColor=#FFFFFF;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="1685" y="1040" width="45" height="40" as="geometry"/></mxCell>
+
+        <mxCell id="p2-e-git-dab" value="bundle source" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p2-git" target="p2-dab"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-behavior-agent" value="packaged with release" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;dashed=1;fontColor=#1B6B8F;" edge="1" parent="1" source="p2-behavior" target="p2-agent-app"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-dab-app" value="deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=3;fontColor=#B42412;" edge="1" parent="1" source="p2-dab" target="p2-agent-app"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-ui-agent" value="/responses + OAuth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#87999D;strokeWidth=2;dashed=1;fontColor=#52656A;" edge="1" parent="1" source="p2-ui-app" target="p2-agent-app"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-mcp-agent" value="/responses + OAuth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#87999D;strokeWidth=2;dashed=1;fontColor=#52656A;" edge="1" parent="1" source="p2-mcp-app" target="p2-agent-app"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-source-volume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p2-structured-source" target="p2-volume"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-doc-volume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p2-doc-source" target="p2-volume"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-volume-pipeline" value="read" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p2-volume" target="p2-pipeline"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-pipeline-bronze" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p2-pipeline" target="p2-bronze"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-bronze-silver" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p2-bronze" target="p2-silver"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-silver-gold" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p2-silver" target="p2-gold"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-pipeline-chunks" value="parse + chunk" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p2-pipeline" target="p2-chunks"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-chunks-index" value="Delta Sync" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p2-chunks" target="p2-index"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-index-rerank" value="candidates" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p2-index" target="p2-reranker"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-agent-gold" value="UC Functions / MCP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p2-agent-app" target="p2-gold"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p2-e-agent-reranker" value="search_policy_docs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p2-agent-app" target="p2-reranker"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="placement-decisions" name="3 - Placement Decisions">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p3-title" value="E-commerce Support Agent — Placement Decision Map" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#0B2026;" vertex="1" parent="1"><mxGeometry x="40" y="20" width="1720" height="45" as="geometry"/></mxCell>
+        <mxCell id="p3-subtitle" value="Choose by responsibility and lifecycle, not by convenience" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52656A;" vertex="1" parent="1"><mxGeometry x="42" y="62" width="1600" height="28" as="geometry"/></mxCell>
+
+        <mxCell id="p3-start" value="&lt;b&gt;New capability or content&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#0B2026;fontColor=#FFFFFF;fontStyle=1;fontSize=16;" vertex="1" parent="1"><mxGeometry x="710" y="120" width="300" height="90" as="geometry"/></mxCell>
+
+        <mxCell id="p3-q-behavior" value="Is it agent instruction or operational data?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1"><mxGeometry x="650" y="265" width="420" height="135" as="geometry"/></mxCell>
+        <mxCell id="p3-q-always" value="Must it apply to every request?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1"><mxGeometry x="120" y="470" width="330" height="125" as="geometry"/></mxCell>
+        <mxCell id="p3-rule" value="&lt;b&gt;RULE IN SOURCE&lt;/b&gt;&lt;br&gt;ecommerce_agent/rules/*.md&lt;br&gt;short • mandatory • always loaded" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#FFFFFF;fontSize=14;" vertex="1" parent="1"><mxGeometry x="40" y="690" width="300" height="105" as="geometry"/></mxCell>
+        <mxCell id="p3-skill" value="&lt;b&gt;SKILL IN SOURCE&lt;/b&gt;&lt;br&gt;ecommerce_agent/skills/*.md&lt;br&gt;progressive disclosure&lt;br&gt;list_skills → load_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="380" y="690" width="300" height="115" as="geometry"/></mxCell>
+        <mxCell id="p3-volume-future" value="&lt;b&gt;OPTIONAL VOLUME PROVIDER&lt;/b&gt;&lt;br&gt;only for independent publishing lifecycle&lt;br&gt;read-only • pinned version • rollback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1"><mxGeometry x="210" y="900" width="310" height="105" as="geometry"/></mxCell>
+
+        <mxCell id="p3-q-operational" value="Is it raw/generated business data or a document?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1"><mxGeometry x="750" y="470" width="360" height="125" as="geometry"/></mxCell>
+        <mxCell id="p3-data" value="&lt;b&gt;UC VOLUME + DELTA&lt;/b&gt;&lt;br&gt;raw files • Bronze/Silver/Gold&lt;br&gt;policy chunk table • metadata" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#EEEDE9;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="745" y="690" width="300" height="115" as="geometry"/></mxCell>
+
+        <mxCell id="p3-q-governed" value="Is it reusable business/data logic needing UC grants, discovery, lineage, or audit?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1"><mxGeometry x="1220" y="430" width="480" height="165" as="geometry"/></mxCell>
+        <mxCell id="p3-q-network" value="Does it require network egress, a large model, or custom reranking?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=15;" vertex="1" parent="1"><mxGeometry x="1110" y="680" width="400" height="145" as="geometry"/></mxCell>
+        <mxCell id="p3-uc-func" value="&lt;b&gt;UNITY CATALOG FUNCTION&lt;/b&gt;&lt;br&gt;SQL for governed data queries&lt;br&gt;Python for sandboxed deterministic policy logic&lt;br&gt;typed contract + explicit grants" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0B2026;strokeColor=#FF3621;strokeWidth=3;fontColor=#FFFFFF;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1470" y="680" width="290" height="135" as="geometry"/></mxCell>
+        <mxCell id="p3-serving" value="&lt;b&gt;SERVING TOOL&lt;/b&gt;&lt;br&gt;thin local typed adapter&lt;br&gt;Model Serving endpoint&lt;br&gt;example: search_policy_docs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE4DF;strokeColor=#FF3621;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1030" y="920" width="300" height="120" as="geometry"/></mxCell>
+        <mxCell id="p3-local" value="&lt;b&gt;LOCAL LANGCHAIN TOOL&lt;/b&gt;&lt;br&gt;pure • fast • deterministic&lt;br&gt;no external resource&lt;br&gt;example: delay severity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9F7F4;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1380" y="920" width="300" height="120" as="geometry"/></mxCell>
+
+        <mxCell id="p3-mcp" value="&lt;b&gt;PRODUCTION TRANSPORT&lt;/b&gt;&lt;br&gt;Managed MCP client → managed UC Functions MCP server&lt;br&gt;allowlist + App OAuth + async lifecycle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEFF3;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#0B2026;fontSize=14;" vertex="1" parent="1"><mxGeometry x="1450" y="230" width="310" height="115" as="geometry"/></mxCell>
+        <mxCell id="p3-toolkit" value="&lt;b&gt;COMPATIBILITY / CERT LAB&lt;/b&gt;&lt;br&gt;top-level UCFunctionToolkit&lt;br&gt;explicit target only • no auto fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D79B00;dashed=1;strokeWidth=2;fontColor=#0B2026;fontSize=13;" vertex="1" parent="1"><mxGeometry x="1110" y="230" width="280" height="115" as="geometry"/></mxCell>
+
+        <mxCell id="p3-e-start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;" edge="1" parent="1" source="p3-start" target="p3-q-behavior"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-behavior-yes" value="instruction" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p3-q-behavior" target="p3-q-always"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-behavior-no" value="operational / capability" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p3-q-behavior" target="p3-q-operational"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-always-rule" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p3-q-always" target="p3-rule"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-always-skill" value="no — situational" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p3-q-always" target="p3-skill"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-skill-volume" value="future only" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#87999D;strokeWidth=2;dashed=1;fontColor=#52656A;" edge="1" parent="1" source="p3-skill" target="p3-volume-future"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-operational-data" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p3-q-operational" target="p3-data"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-operational-cap" value="no — executable capability" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p3-q-operational" target="p3-q-governed"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-governed-uc" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p3-q-governed" target="p3-uc-func"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-governed-network" value="no / evaluate runtime need" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p3-q-governed" target="p3-q-network"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-network-serving" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#FF3621;strokeWidth=2;fontColor=#B42412;" edge="1" parent="1" source="p3-q-network" target="p3-serving"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-network-local" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#0B2026;strokeWidth=2;fontColor=#0B2026;" edge="1" parent="1" source="p3-q-network" target="p3-local"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-uc-mcp" value="default production path" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#1B6B8F;strokeWidth=2;fontColor=#1B6B8F;" edge="1" parent="1" source="p3-uc-func" target="p3-mcp"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="p3-e-uc-toolkit" value="explicit alternate target" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#D79B00;strokeWidth=2;dashed=1;fontColor=#8C4A00;" edge="1" parent="1" source="p3-uc-func" target="p3-toolkit"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="p3-note" value="&lt;b&gt;Invariant:&lt;/b&gt; placement changes require updates to this diagram, the architecture Markdown, decisions.md, certification index, and the active sprint." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#87999D;fontColor=#0B2026;fontSize=13;align=left;spacingLeft=14;" vertex="1" parent="1"><mxGeometry x="40" y="1090" width="1720" height="55" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
