@@ -217,7 +217,7 @@ Status legend: [ ] pending / [~] in progress / [x] done
   managed MCP schema.
 - [ ] **I4:** Create a managed-MCP lab that discovers and calls allowlisted UC
   functions, then documents authentication and permission failure modes.
-- [ ] **I5:** Create a current exam lab for MLflow pyfunc, model signature,
+- [x] **I5:** Create a current exam lab for MLflow pyfunc, model signature,
   Unity Catalog model registration, and Model Serving without importing it from
   the Databricks Apps production path.
 - [ ] **I6:** Create a retrieval lab covering chunking, Delta tables, AI Search,

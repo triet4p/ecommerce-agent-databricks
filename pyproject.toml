@@ -3,7 +3,7 @@ name = "ecommerce-agent-databricks"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "databricks-langchain==0.20.0",
     "databricks-sdk>=0.70,<=0.130",
