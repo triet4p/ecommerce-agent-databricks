@@ -1,0 +1,21 @@
+[project]
+name = "ecommerce-agent-databricks"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "databricks-langchain==0.20.0",
+    "databricks-sdk>=0.70,<=0.130",
+    "pydantic>=2.12",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+data-processing = [
+    "databricks-ai-search==0.76",
+    "numpy>=2.2,<3.0",
+    "pandas>=2.2,<3.0",
+    "pyspark>=4.0,<4.3",
+    "sentence-transformers>=5.0",
+]
