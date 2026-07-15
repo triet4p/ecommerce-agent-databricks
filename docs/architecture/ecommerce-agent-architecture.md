@@ -1,9 +1,15 @@
 # Ecommerce Agent Target Architecture
 
-**Status:** Target architecture for Sprint 1  
-**Architecture version:** 0.1  
-**Last reviewed:** 2026-07-15  
-**Diagram:** [Editable draw.io source](ecommerce-agent-architecture.drawio)
+- **Status:** Target architecture for Sprint 1
+- **Architecture version:** 0.3
+- **Last reviewed:** 2026-07-15
+- **Diagram:** [Editable draw.io source](ecommerce-agent-architecture.drawio)
+
+Rendered previews:
+
+- [Production Runtime](previews/architecture-page-1.png)
+- [Data and Delivery](previews/architecture-page-2.png)
+- [Placement Decisions](previews/architecture-page-3.png)
 
 ## Purpose
 
@@ -42,10 +48,13 @@ Line notation:
 - Dashed gray line: optional or future path.
 - Dashed orange line: compatibility or certification-only path.
 
-The diagram uses Databricks' published Lava, Navy, Oat, and White palette and
-self-contained vector glyphs. It does not embed a modified Databricks trademark
-logo or depend on remote image URLs. This keeps the source editable and usable
-offline while respecting the official brand guidance.
+The diagram uses Databricks' published Lava, Navy, Oat, and White palette. Small
+Databricks, Delta Lake, MLflow, and MCP marks are embedded unmodified as data
+URIs from primary sources, so rendering does not depend on remote URLs. Every
+source and SHA-256 checksum is recorded in the [icon attribution
+manifest](assets/ATTRIBUTION.md). Services without a stable public product icon
+remain explicit text-labeled shapes rather than receiving an invented or
+misleading logo.
 
 ## 1. Production Runtime
 
@@ -312,6 +321,29 @@ Update procedure:
 5. Update the sprint task and run the draw.io XML validation check.
 6. Re-review linked official documentation if it is more than 90 days old or a
    dependency/platform version changes.
+
+### Rendering and visual QA
+
+The source was last rendered and visually checked with draw.io Desktop 30.3.6.
+Page indexes are 1-based in the desktop CLI. Render each page before accepting a
+diagram change:
+
+```powershell
+draw.io --export --format png --page-index 1 --scale 1.5 --border 20 `
+  --output previews/architecture-page-1.png ecommerce-agent-architecture.drawio
+```
+
+Repeat for pages 2 and 3. Check the PNGs at original resolution for:
+
+- connectors crossing through nodes or text;
+- connectors sharing the same segment without representing the same flow;
+- labels obscuring arrowheads or node labels;
+- long dependencies duplicated across multiple pages;
+- optional or certification paths appearing inside the production boundary.
+
+Also verify every embedded image against the checksums in
+`assets/ATTRIBUTION.md`; XML validity alone cannot detect a subtly altered or
+truncated image payload.
 
 ## Official References
 
