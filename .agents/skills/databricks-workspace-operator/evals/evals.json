@@ -1,0 +1,41 @@
+{
+  "skill_name": "databricks-workspace-operator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "DATABRICKS_HOST và DATABRICKS_TOKEN đã có trong .env. Hãy upload experiments/DeepSeekServingEndpointStreaming.py, chạy nó bằng serverless Jobs, bắt buộc giữ catalog workspace, không in credential, rồi báo streaming có thật sự tạo nhiều delta hay không.",
+      "expected_output": "A safe authenticated workflow that uploads and runs the notebook on serverless compute and reports run IDs plus assertion-based streaming evidence without exposing secrets.",
+      "files": [],
+      "expectations": [
+        "Checks credential presence without printing values",
+        "Verifies the exact workspace catalog before execution",
+        "Uses a serverless notebook task with no cluster definition",
+        "Reports terminal job state and concrete streaming delta evidence"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Notebook gọi serving_endpoints.create_and_wait bị timeout đúng 5 phút nhưng UI vài phút sau lại thấy endpoint. Hãy chẩn đoán và sửa workflow deploy; endpoint này đang tính phí nên đừng tạo trùng hoặc thay traffic ngoài ý muốn.",
+      "expected_output": "A control-plane diagnosis that distinguishes submission from readiness, recovers by name after timeout, waits long enough, preserves existing configuration, and avoids duplicate paid resources.",
+      "files": [],
+      "expectations": [
+        "Explains that SDK endpoint methods return long-running waiters",
+        "Checks endpoint existence after timeout before retrying creation",
+        "Waits for NOT_UPDATING before a new update",
+        "Requires READY and active-config verification before querying"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "ChatDatabricks stream không tool thì chạy, nhưng bind_tools qua ResponsesAgent lúc đầu báo schema không có name/parameters, sau đó DeepSeek V4 thinking lại báo không hỗ trợ tool_choice. Hãy sửa theo stack MLflow 3.14 + LangChain 1.x và chứng minh reasoning tool round-trip.",
+      "expected_output": "A modern ResponsesAgent fix that widens the runtime tools signature, omits DeepSeek tool_choice, preserves reasoning, and verifies a multi-turn tool continuation through ChatDatabricks.",
+      "files": [],
+      "expectations": [
+        "Does not introduce legacy ChatModel or ChatAgent APIs",
+        "Widens only the ResponsesAgent tools input to accept full runtime tools",
+        "Omits tool_choice for DeepSeek V4 thinking mode",
+        "Tests tool call, tool output continuation, reasoning preservation, and multiple stream deltas"
+      ]
+    }
+  ]
+}

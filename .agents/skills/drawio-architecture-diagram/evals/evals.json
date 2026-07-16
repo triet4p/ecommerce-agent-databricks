@@ -1,0 +1,41 @@
+{
+  "skill_name": "drawio-architecture-diagram",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Sửa docs/architecture/ecommerce-agent-architecture.drawio: các mũi tên đang chồng nhau và icon che text. Giữ nguyên ba page và nội dung kiến trúc, route lại cho dễ đọc, render toàn bộ preview rồi tự xem ảnh trước khi bàn giao.",
+      "expected_output": "An editable three-page draw.io source with separated orthogonal routes, icon/text clearance, regenerated previews, and an explicit original-resolution visual QA report.",
+      "files": [],
+      "expectations": [
+        "Preserves the existing page structure and architecture meaning",
+        "Uses explicit orthogonal routing and separates unrelated shared segments",
+        "Moves or resizes icons so they do not cover labels",
+        "Runs structural validation, renders every page, and inspects each preview"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Tạo một file .drawio mới mô tả Databricks App gọi ChatDatabricks, Model Serving, managed MCP, UC Functions, Delta và MLflow. Dùng icon thật nếu có nhưng phải offline-render được và có attribution/checksum.",
+      "expected_output": "A polished editable multi-boundary diagram using official embedded assets with explicit labels, provenance, checksums, and rendered previews.",
+      "files": [],
+      "expectations": [
+        "Sources product marks from primary official locations",
+        "Embeds assets for offline rendering without altering trademarks",
+        "Creates and updates an attribution manifest with checksums",
+        "Uses labels and boundaries rather than relying on icons alone"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Thêm AI Gateway và inference tables vào page production của sơ đồ hiện tại, nhưng không làm rối runtime flow và không regenerate ID của các node cũ. Update luôn markdown giải thích và preview.",
+      "expected_output": "A focused page update that preserves stable IDs and production reading order, distinguishes governance/control flow, updates documentation, and passes rendered visual QA.",
+      "files": [],
+      "expectations": [
+        "Preserves IDs and untouched pages",
+        "Places governance components without crossing or obscuring the runtime path",
+        "Uses a consistent visual distinction for control-plane relationships",
+        "Updates companion documentation and regenerated previews"
+      ]
+    }
+  ]
+}
