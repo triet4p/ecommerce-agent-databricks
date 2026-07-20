@@ -1,44 +1,46 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ## Agent entrypoint — ecommerce_support (Models-from-Code, path LEGACY)
-# MAGIC File này dùng để log agent qua `mlflow.pyfunc.log_model(python_model="agent.py")`
-# MAGIC cho hướng Model Serving cũ (xem driver.py phần legacy). **Path chính hiện tại là
-# MAGIC `agent_app/server.py`** — host agent trực tiếp trên Databricks Apps, không cần file
-# MAGIC này. Vẫn giữ lại vì hữu ích để test agent offline / log 1 bản snapshot cho MLflow
-# MAGIC Agent Evaluation mà không cần chạy cả FastAPI server.
+# MAGIC ## Agent entrypoint — offline snapshot / MLflow Agent Evaluation
+# MAGIC This file builds the agent for offline testing and MLflow Agent Evaluation.
+# MAGIC It logs the agent via ``mlflow.pyfunc.log_model(python_model="agent.py")``
+# MAGIC so it can be evaluated without deploying the full Databricks App.
+# MAGIC
+# MAGIC **The production hosting path is ``agent_app/server.py``** — host the agent
+# MAGIC directly on Databricks Apps with MLflow ``AgentServer``.
+# MAGIC
+# MAGIC NOTE: The config file path resolution assumes this file runs from the
+# MAGIC ``ecommerce_agent`` directory or via Databricks Repos root.
 
 # COMMAND ----------
 
 import mlflow
-import yaml
 
-from agent_core import AgentConfig, build_agent
-from agent_core.tool_interface import register_custom_tool_factory
-from agent_core.retriever_interface import Retriever
+from agent_core import Retriever, ToolRegistry, build_agent, load_config
 
-from projects.ecommerce_support.tools.search_policy_docs_tool import make_search_policy_docs_tool
+from ecommerce_agent.tools.search_policy_docs_tool import make_search_policy_docs_tool
 
 # COMMAND ----------
 
 mlflow.langchain.autolog()
-mlflow.set_registry_uri("databricks-uc")  # cần cho load_prompt() nếu system_prompt_registry_uri có set
+mlflow.set_registry_uri(
+    "databricks-uc"
+)  # required for load_prompt() when system_prompt_registry_uri is set
 
-with open("config.yaml") as f:
-    raw_config = yaml.safe_load(f)
-config = AgentConfig.model_validate(raw_config)
+config = load_config("config.yaml")
 
 # COMMAND ----------
-# Đăng ký tool "nặng" — retriever qua Model Serving endpoint, KHÔNG thể là UC Function
-# vì UC Python Function chạy sandbox không có network egress.
+# Register the serving-endpoint tool factory.
 
+_registry = ToolRegistry()
 if config.retriever is not None:
     retriever = Retriever(config.retriever)
-    register_custom_tool_factory(
+    _registry.register_serving_factory(
         "search_policy_docs",
         lambda tool_config: make_search_policy_docs_tool(retriever, tool_config),
     )
 
-# COMMAND ----------
-
-AGENT = build_agent(config)
+# Build agent for legacy logging use case.
+# Note: UC function tools require managed MCP or explicit UCFunctionToolkit adapter.
+# In this legacy snapshot path, UC functions are resolved via the configured MCP servers.
+AGENT = build_agent(config, registry=_registry)
 mlflow.models.set_model(AGENT)

@@ -20,23 +20,39 @@ patterns to become production fallbacks.
 - Databricks Apps with MLflow `AgentServer` and `ResponsesAgent` is the only
   production hosting path.
 - LangChain `create_agent` with `ChatDatabricks` is the agent construction path.
+- `ChatDatabricks(use_responses_api=True)` is the only model interface visible
+  to the production agent. When DeepSeek is selected, it targets a dedicated
+  custom Model Serving endpoint whose adapter owns the provider SDK, secret,
+  streaming conversion, and `reasoning_content` round-trip.
+- A custom Model Serving endpoint used as a model/provider boundary does not
+  host the agent and is not a fallback to the legacy Model Serving agent path.
+- Project Model Serving capacity is fixed at two existing endpoints:
+  `search-and-rerank-endpoint` and `deepseek-v4-streaming-agent-lab`.
+  Deployments reconcile these in place; they never create temporary, blue-green,
+  environment-specific, or Agent-serving endpoints.
 - Unity Catalog SQL and Python functions are real governed product capabilities,
   not disposable certification examples.
-- The production agent discovers governed UC functions through Databricks
-  managed MCP when that workspace feature is enabled; direct
-  `UCFunctionToolkit` usage is isolated to an explicit compatibility target and
-  certification labs.
+- The agent core supports both Databricks managed MCP and the current top-level
+  `UCFunctionToolkit` as explicit UC-function transports. Each agent build
+  selects exactly one transport; neither is a fallback for failures in the
+  other.
 - Legacy APIs and legacy compatibility code are not allowed in new work.
+- Coding agents have standing authorization to operate the configured
+  Databricks workspace for project-scoped implementation and verification,
+  including resource creation, deployment, grants, compute, and cleanup. They
+  must preserve catalog `ecommerce_agent`, secrets, unrelated resources, and the
+  safety boundaries in `.agents/rules/databricks.md`.
 
 ## Milestones
 
-- [ ] **Milestone 1:** Make the agent importable, configurable, and locally
+- [x] **Milestone 1:** Make the agent importable, configurable, and locally
   testable on the locked modern dependency stack.
-- [ ] **Milestone 2:** Replace every mock tool with tested business logic or a
+- [x] **Milestone 2:** Replace every mock tool with tested business logic or a
   governed Databricks data function, and align all Unity Catalog namespaces.
-- [ ] **Milestone 3:** Deploy through Declarative Automation Bundles with
-  least-privilege resources and pass Databricks integration smoke tests.
-- [ ] **Milestone 4:** Complete current certification labs for UC functions,
+- [x] **Milestone 3:** Deploy through Declarative Automation Bundles with
+  least-privilege App and external-model endpoint resources, then pass
+  Databricks integration smoke tests.
+- [x] **Milestone 4:** Complete current certification labs for UC functions,
   MCP, Apps, MLflow/pyfunc, Model Serving, Vector Search, prompt lifecycle,
   evaluation, governance, and AI Gateway.
 - [ ] **Milestone 5:** Run offline MLflow evaluation, establish quality gates,
@@ -44,28 +60,34 @@ patterns to become production fallbacks.
 
 ## Active Sprints
 
-- [Sprint 1](sprint-plans/sprint-1.md) - *Status: In Progress — DeepSeek/ChatDatabricks serverless lab verified; core implementation tasks remain*
+- None. Sprint 2 will cover evaluation quality gates, CI/CD, and observability.
 
 ## Documentation and Certification Index
 
 - [Target architecture and placement decisions](architecture/ecommerce-agent-architecture.md)
 - [Editable draw.io architecture source](architecture/ecommerce-agent-architecture.drawio)
+- [Sprint 1 official Databricks implementation documentation index](SPRINT_1_DATABRICKS_DOCS_INDEX.md)
 - [Implementation-to-documentation and certification coverage index](CERTIFICATION_INDEX.md)
 
 ## Completed Sprints
 
-- None yet.
+- [Sprint 1](sprint-plans/sprint-1.md) — completed 2026-07-20. The modern
+  Databricks Apps/ResponsesAgent vertical slice, governed tools, source-backed
+  rules and skills, two-endpoint deployment, certification labs, DeepSeek
+  boundary, OAuth Apps, and credentialed smokes are complete.
 
 ## Backlog / Future Work
 
-- Keep a deliberately selected `UCFunctionToolkit` compatibility deployment
-  profile for workspaces where managed MCP is unavailable; never activate it as
-  a hidden runtime fallback.
+- Keep managed MCP and `UCFunctionToolkit` contract tests current without
+  introducing automatic runtime fallback between them.
 - Add a Unity Catalog Volume-backed skill provider only when skills require an
   independent publishing lifecycle outside Git and application deployments.
-- Reconcile the standalone chat UI and custom MCP server after the core agent
-  App contract is stable; use supported app-to-app OAuth and `CAN_USE` grants.
-- Add CI/CD, load testing, Unity AI Gateway controls, and online monitoring after
-  the first successful credentialed deployment.
+- Add CI/CD, load testing, and online monitoring after the successful
+  credentialed deployment.
+- Re-evaluate inference tables, usage tracking, and QPM when the workspace
+  exposes AI Gateway controls for this custom endpoint type. Until then, retain
+  the verified application input/output/graph-step safety envelope.
+- Obtain paid-workspace Databricks Serving billing data before treating the
+  Free Edition DeepSeek deployment as a paid-production cost baseline.
 - Refresh the certification coverage matrix against the official exam guide two
   weeks before the scheduled exam date, as required by the guide.

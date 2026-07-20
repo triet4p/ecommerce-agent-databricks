@@ -1,9 +1,6 @@
-fastapi
-uvicorn
-mlflow>=3.0.0
-databricks-langchain
-databricks-sdk>=0.120.0
-langchain>=1.0.0
-langchain-core>=1.0.0
-pydantic>=2.0
-pyyaml
+# This App uses the project-level uv.lock as its dependency source.
+# Do not add packages here. If the App needs a runtime dependency,
+# add it to pyproject.toml in the project root and run `uv sync`.
+#
+# The `uvicorn` and `fastapi` start commands are configured in app.yaml;
+# their packages are already resolved in uv.lock.

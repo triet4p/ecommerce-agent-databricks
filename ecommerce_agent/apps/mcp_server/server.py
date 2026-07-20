@@ -1,44 +1,47 @@
 """
 apps.mcp_server.server
 --------------------------
-Custom MCP server, deploy như 1 Databricks App riêng. Expose agent (giờ host trực tiếp
-trên Databricks Apps — `agent_app/server.py`, không qua Model Serving) như 1 MCP tool
-duy nhất, để agent khác (multi-agent supervisor, Claude Code lúc dev...) gọi qua chuẩn
-MCP thay vì gọi thẳng REST.
+Custom MCP server deployed as a separate Databricks App. Exposes the e-commerce
+support agent as a single MCP tool for multi-agent supervision or developer
+tooling.
 
-NOTE (đã rà lại 2026-07, đổi theo current state): cùng caveat với chat_ui — App gọi
-App chưa có resource wiring sẵn trong databricks.yml, dùng OAuth header từ
-`WorkspaceClient().config.authenticate()`; verify lại cách lấy token chính xác nhất
-theo docs tại thời điểm deploy.
+Uses OAuth app-to-app authentication.
 """
-
-import os
 
 import requests
 from databricks.sdk import WorkspaceClient
 from mcp.server.fastmcp import FastMCP
 
-AGENT_APP_URL = os.environ["AGENT_APP_URL"]
+from app_oauth import resolve_agent_app_url
+from response_output import extract_response_text
 
 mcp = FastMCP("ecommerce-support-agent")
+AGENT_REQUEST_TIMEOUT_SECONDS = 180
 
 
 @mcp.tool()
 def ask_ecommerce_support(question: str) -> str:
-    """Hỏi agent hỗ trợ khách hàng e-commerce (đơn hàng, chính sách, hoàn tiền).
-    question: câu hỏi bằng ngôn ngữ tự nhiên, có thể kèm order_id/customer_id nếu có."""
+    """Ask the e-commerce support agent about orders, policies, or refunds.
+
+    Args:
+        question: Natural language question, may include order_id or customer_id.
+    """
     w = WorkspaceClient()
+    agent_app_url = resolve_agent_app_url(w)
     headers = w.config.authenticate()
     response = requests.post(
-        f"{AGENT_APP_URL}/responses",
+        f"{agent_app_url}/api/responses",
         headers=headers,
         json={"input": [{"role": "user", "content": question}], "stream": False},
-        timeout=60,
+        # The retriever can spend up to two 60-second attempts warming from
+        # scale-to-zero. Keep the outer App-to-App budget above that bound plus
+        # model/tool-loop overhead so the bounded retry can actually complete.
+        timeout=AGENT_REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
-    return response.json()["output"][0]["content"][0]["text"]
+    return extract_response_text(response.json())
 
 
 if __name__ == "__main__":
-    # Databricks Apps chạy container HTTP — dùng streamable-http transport, không phải stdio.
+    # Databricks Apps run container HTTP — use streamable-http transport.
     mcp.run(transport="streamable-http")

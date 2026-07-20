@@ -17,7 +17,7 @@ with open("config.yaml") as f:
 
 # Databricks-UC Prompt Registry yêu cầu tên đầy đủ 3 phần catalog.schema.name — KHÔNG
 # dùng được tên trần như "ecommerce_support_system_prompt" (khác Prompt Registry OSS).
-PROMPT_NAME = f"ecommerce_demo.agent.{raw_config['use_case']}_system_prompt"
+PROMPT_NAME = f"ecommerce_agent.agent_layer.{raw_config['use_case']}_system_prompt"
 
 # COMMAND ----------
 
@@ -32,5 +32,7 @@ print(f"Registered: prompts:/{PROMPT_NAME}/{prompt.version}")
 # Gắn alias "production" — cho phép rollback bằng cách trỏ alias sang version khác,
 # không cần sửa config.yaml.
 
-mlflow.genai.set_prompt_alias(name=PROMPT_NAME, alias="production", version=prompt.version)
+mlflow.genai.set_prompt_alias(
+    name=PROMPT_NAME, alias="production", version=prompt.version
+)
 print(f"system_prompt_registry_uri: prompts:/{PROMPT_NAME}@production")

@@ -25,9 +25,15 @@ user's namespace.
      explicitly placed in scope are normal implementation actions.
    - Creating paid compute, replacing traffic, deleting resources, changing
      permissions, or touching an unrelated endpoint requires explicit authority.
-5. Identify invariants before running anything. In this repository, preserve
-   catalog `workspace` unless the user explicitly changes it. Never silently
-   substitute `main`, a personal catalog, or a new schema.
+5. Identify invariants before running anything. In this repository, the user has
+   explicitly selected catalog `ecommerce_agent` for production resources.
+   Never silently substitute `workspace`, `main`, `ecommerce_demo`, a personal
+   catalog, or a new schema. Historical experiments may retain their recorded
+   namespace but do not define the production default.
+6. Apply the standing project-scoped workspace authorization in
+   `.agents/rules/databricks.md`: routine create, update, deploy, grant, compute,
+   test, and cleanup actions required by the Sprint Plan do not need repeated
+   confirmation.
 
 ## Credential safety
 
@@ -185,4 +191,3 @@ requires a successful continuation after a tool result.
 - Using Playground `Auto`/`Required` when a provider rejects `tool_choice`.
 - Letting a certification or compatibility experiment leak into the production
   serving architecture.
-

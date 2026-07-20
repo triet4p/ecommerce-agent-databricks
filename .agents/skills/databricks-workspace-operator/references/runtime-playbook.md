@@ -9,7 +9,7 @@ before relying on feature availability, SDK signatures, or preview status.
 - `databricks-langchain==0.20.0`
 - `langchain==1.3.13`
 - `mlflow==3.14.0`
-- Unity Catalog invariant for the current project: `workspace`
+- Unity Catalog production invariant for the current project: `ecommerce_agent`
 - Production model caller: `ChatDatabricks`
 - Provider-specific serving adapter: isolated experiment/custom model only
 
@@ -39,9 +39,9 @@ from databricks.sdk import WorkspaceClient
 
 w = WorkspaceClient()
 me = w.current_user.me()
-catalog = w.catalogs.get("workspace")
+catalog = w.catalogs.get("ecommerce_agent")
 
-assert catalog.name == "workspace"
+assert catalog.name == "ecommerce_agent"
 print("AUTH_OK")
 print("USER=" + (me.user_name or me.display_name or "<unknown>"))
 print("CATALOG=" + catalog.name)
@@ -66,7 +66,7 @@ job = w.jobs.create(
             notebook_task=NotebookTask(
                 notebook_path="/Users/me@example.com/project/smoke",
                 source=Source.WORKSPACE,
-                base_parameters={"catalog": "workspace"},
+                base_parameters={"catalog": "ecommerce_agent"},
             ),
             timeout_seconds=1800,
         )
@@ -79,7 +79,7 @@ Use the task run ID for `jobs.get_run_output()`. Add a structured notebook exit
 when the result must be retrievable through the API:
 
 ```python
-dbutils.notebook.exit(json.dumps({"status": "OK", "catalog": "workspace"}))
+dbutils.notebook.exit(json.dumps({"status": "OK", "catalog": "ecommerce_agent"}))
 ```
 
 ## Endpoint create/update pattern
@@ -192,4 +192,3 @@ Databricks Apps production path.
 - Databricks LangChain API: https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html
 - MLflow ResponsesAgent: https://mlflow.org/docs/latest/genai/serving/responses-agent/
 - DeepSeek thinking mode: https://api-docs.deepseek.com/guides/thinking_mode
-

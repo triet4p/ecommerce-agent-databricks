@@ -1,8 +1,6 @@
 use_case: ecommerce_support
 
-# Local dev fallback / giá trị dùng để seed Prompt Registry (xem register_prompt.py).
-# Khi system_prompt_registry_uri có giá trị, nó THẮNG — dòng system_prompt dưới đây
-# chỉ còn tác dụng lúc chạy register_prompt.py hoặc test local không có MLflow.
+# Local dev fallback. When system_prompt_registry_uri is set, it WINS over this field.
 system_prompt: |
   Bạn là trợ lý hỗ trợ khách hàng cho một sàn thương mại điện tử tại Brazil.
   Luôn kiểm tra dữ kiện qua tool trước khi trả lời (đơn hàng, chính sách, hoàn tiền).
@@ -10,32 +8,20 @@ system_prompt: |
   dẫn chuyên biệt nào áp dụng cho tình huống này không.
 
 # Bỏ comment sau khi chạy register_prompt.py (cú pháp alias dùng "@", không phải "/"):
-# system_prompt_registry_uri: prompts:/ecommerce_demo.agent.ecommerce_support_system_prompt@production
+# system_prompt_registry_uri: prompts:/ecommerce_agent.agent_layer.ecommerce_support_system_prompt@production
 
 llm:
-  endpoint_name: databricks-meta-llama-3-3-70b-instruct
+  # This singleton custom endpoint is the only configured model boundary that
+  # supports the MLflow Responses API required by AgentServer in this workspace.
+  endpoint_name: deepseek-v4-streaming-agent-lab
   temperature: 0.0
   max_tokens: 1500
 
+# Both UC transports are supported. Select exactly one; failures never fall back
+# automatically to the other transport. Change to uc_toolkit for the direct path.
+uc_function_transport: managed_mcp
+
 tools:
-  # --- SQL UC Functions (đọc gold.order_summary) ---
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.get_order_status
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.get_customer_order_history
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.get_seller_performance
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.get_shipping_delay_stats
-
-  # --- Python UC Functions (tính toán nhẹ) ---
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.check_refund_eligibility
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.compute_delay_severity
-  - kind: uc_function
-    full_name: ecommerce_demo.agent.customer_value_score
-
   # --- Tool nặng: rerank qua Model Serving endpoint riêng ---
   - kind: serving_endpoint
     name: search_policy_docs
@@ -44,19 +30,52 @@ tools:
       Tìm kiếm trong các tài liệu chính sách (return, shipping, LGPD, seller conduct)
       để trả lời câu hỏi về quy định. Trả về các đoạn văn bản liên quan kèm nguồn.
 
+  # --- Local deterministic tools (không cần UC registration) ---
+  - kind: local_function
+    name: compute_delay_severity
+    description: >
+      Phân loại mức độ nghiêm trọng của việc giao hàng trễ dựa trên ngày giao dự kiến
+      và ngày giao thực tế. Trả về 'none', 'minor', 'moderate', hoặc 'severe'.
+    function_ref: ecommerce_agent.tools.python_tools.compute_delay_severity
+
+  - kind: local_function
+    name: customer_value_score
+    description: >
+      Tính điểm giá trị khách hàng (0-100) dựa trên tổng số đơn, tổng chi tiêu,
+      và điểm đánh giá trung bình. Dùng để ưu tiên xử lý khiếu nại.
+    function_ref: ecommerce_agent.tools.python_tools.customer_value_score
+
+# Governed UC functions. With the selected managed_mcp transport, the locked
+# Databricks client derives one current /api/2.0/mcp/functions/... server URL
+# per function from WorkspaceClient; no workspace-specific URL is checked in.
+# Set uc_function_transport: uc_toolkit only to select the direct compatibility
+# transport explicitly. Failures never fall back between these transports.
+  - kind: uc_function
+    full_name: ecommerce_agent.agent_layer.get_order_status
+  - kind: uc_function
+    full_name: ecommerce_agent.agent_layer.get_customer_order_history
+  - kind: uc_function
+    full_name: ecommerce_agent.agent_layer.get_seller_performance
+  - kind: uc_function
+    full_name: ecommerce_agent.agent_layer.get_shipping_delay_stats
+  - kind: uc_function
+    full_name: ecommerce_agent.agent_layer.check_refund_eligibility
+
 retriever:
   endpoint_name: search-and-rerank-endpoint
   over_fetch_k: 20
   top_k: 5
+  # One bounded retry absorbs scale-to-zero cold starts without hiding a
+  # persistent serving failure from the caller.
+  timeout_seconds: 60
+  cold_start_retry_attempts: 1
 
-# Rules — luôn nạp vào system prompt lúc build agent, giữ danh sách này ngắn.
+# Rules — luôn nạp vào system prompt lúc build agent.
 rules:
   paths:
-    - projects/ecommerce_support/rules/no-assume-customer-claims.md
-    - projects/ecommerce_support/rules/tone-and-language.md
+    - rules/no-assume-customer-claims.md
+    - rules/tone-and-language.md
 
 # Skills — progressive disclosure, agent tự gọi list_skills() / load_skill(name).
-# volume_path trỏ tới UC Volume chứa các file .md; khi deploy, sync
-# projects/ecommerce_support/skills/*.md lên volume này (xem driver.py).
 skills:
-  volume_path: /Volumes/ecommerce_demo/agent/skills
+  source_dir: skills

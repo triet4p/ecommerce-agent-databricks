@@ -36,7 +36,9 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
         agent_source = self.source[start:end].replace(
             "__DEEPSEEK_MODEL__", repr("deepseek-v4-flash")
         )
-        agent_source = agent_source.rsplit("\nset_model(DeepSeekStreamingAgent())", 1)[0]
+        agent_source = agent_source.rsplit("\nset_model(DeepSeekStreamingAgent())", 1)[
+            0
+        ]
         namespace: dict = {}
         exec(compile(agent_source, "deepseek_responses_agent.py", "exec"), namespace)
 
@@ -86,7 +88,9 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
         self.assertEqual(messages[0]["tool_calls"][0]["id"], "call_1")
         self.assertEqual(messages[1]["role"], "tool")
         self.assertEqual(messages[2]["reasoning_content"], "final reasoning")
-        self.assertEqual(messages[3], {"role": "user", "content": "Check the next order."})
+        self.assertEqual(
+            messages[3], {"role": "user", "content": "Check the next order."}
+        )
 
         tools = namespace["_responses_tools_to_openai_tools"](request.tools)
         self.assertEqual(tools[0]["function"]["name"], "lookup_order_total")
@@ -161,7 +165,7 @@ class DeepSeekServingNotebookContractTest(unittest.TestCase):
             "tool_model = chat_databricks.bind_tools([lookup_order_total])",
             "turn_1 = run_tool_turn(",
             "turn_2 = run_tool_turn(",
-            'assert reasoning_tool_rounds > 0',
+            "assert reasoning_tool_rounds > 0",
             'assert turn_1["visible_text_deltas"] > 0',
             'assert turn_2["visible_text_deltas"] > 0',
             "CHATDATABRICKS STREAMING + REASONING ROUND-TRIP OK",

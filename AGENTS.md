@@ -35,3 +35,13 @@ History follows Conventional Commits, such as `feat(core): implement core agent 
 ## Security & Agent Notes
 
 Never commit Databricks tokens, `.env` files, customer data, or generated credentials. Keep deploy-specific values configurable. Record durable technical decisions and resolved environment quirks in `.agents/memory/decisions.md` and `.agents/memory/lessons-learned.md`, respectively.
+
+## Databricks Workspace Autonomy
+
+Before Databricks work, read `.agents/rules/databricks.md` and use the
+`databricks-workspace-operator` skill. The repository owner has granted standing
+authorization for coding agents to inspect, create, update, deploy, grant, run,
+and verify project-scoped Databricks resources required by the active Sprint
+Plan without requesting confirmation for each routine operation. Preserve the
+canonical `ecommerce_agent` catalog, never expose secrets, and do not mutate or
+delete unrelated resources.

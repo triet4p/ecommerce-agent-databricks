@@ -1,3 +1,6 @@
-mcp
-requests
-databricks-sdk>=0.120.0
+# This source-isolated Databricks App is installed by pip, not the repository
+# root uv.lock. Keep its direct runtime dependencies explicit and aligned with
+# the locked project versions.
+databricks-sdk==0.120.0
+mcp==1.28.1
+requests==2.34.2

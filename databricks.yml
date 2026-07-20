@@ -1,0 +1,98 @@
+bundle:
+  name: ecommerce-agent
+
+variables:
+  app_name:
+    description: Singleton Databricks App name shared by the deployment targets.
+    default: ecommerce-agent-app
+  llm_endpoint_name:
+    # AgentServer requires Responses API passthrough. The previously configured
+    # Foundation endpoint rejects it; use the existing DeepSeek singleton.
+    default: deepseek-v4-streaming-agent-lab
+  reranker_endpoint_name:
+    default: search-and-rerank-endpoint
+
+resources:
+  experiments:
+    ecommerce_agent_app:
+      # MLflow does not create intermediate workspace folders during bundle
+      # deployment; /Shared is present in the target workspace.
+      name: /Shared/ecommerce-agent-app
+
+  apps:
+    ecommerce_agent:
+      # This is an App, not an Agent Model Serving endpoint. The two custom
+      # endpoints remain externally managed singleton dependencies.
+      name: ${var.app_name}
+      description: MLflow ResponsesAgent e-commerce support application.
+      source_code_path: .
+      resources:
+        - name: llm-endpoint
+          serving_endpoint:
+            name: ${var.llm_endpoint_name}
+            permission: CAN_QUERY
+        - name: policy-reranker
+          serving_endpoint:
+            name: ${var.reranker_endpoint_name}
+            permission: CAN_QUERY
+        - name: agent-experiment
+          experiment:
+            experiment_id: ${resources.experiments.ecommerce_agent_app.id}
+            permission: CAN_EDIT
+        - name: get-order-status
+          uc_securable:
+            securable_full_name: ecommerce_agent.agent_layer.get_order_status
+            securable_type: FUNCTION
+            permission: EXECUTE
+        - name: get-customer-order-history
+          uc_securable:
+            securable_full_name: ecommerce_agent.agent_layer.get_customer_order_history
+            securable_type: FUNCTION
+            permission: EXECUTE
+        - name: get-seller-performance
+          uc_securable:
+            securable_full_name: ecommerce_agent.agent_layer.get_seller_performance
+            securable_type: FUNCTION
+            permission: EXECUTE
+        - name: get-shipping-delay-stats
+          uc_securable:
+            securable_full_name: ecommerce_agent.agent_layer.get_shipping_delay_stats
+            securable_type: FUNCTION
+            permission: EXECUTE
+        - name: check-refund-eligibility
+          uc_securable:
+            securable_full_name: ecommerce_agent.agent_layer.check_refund_eligibility
+            securable_type: FUNCTION
+            permission: EXECUTE
+
+    ecommerce_agent_chat_ui:
+      name: ecommerce-agent-chat-ui
+      description: Streamlit chat UI that invokes the agent App through OAuth.
+      source_code_path: ecommerce_agent/apps/chat_ui
+      resources:
+        - name: agent-app
+          app:
+            name: ${resources.apps.ecommerce_agent.name}
+            permission: CAN_USE
+
+    ecommerce_agent_mcp_facade:
+      name: ecommerce-agent-mcp-facade
+      description: Streamable HTTP MCP facade that invokes the agent App through OAuth.
+      source_code_path: ecommerce_agent/apps/mcp_server
+      resources:
+        - name: agent-app
+          app:
+            name: ${resources.apps.ecommerce_agent.name}
+            permission: CAN_USE
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}

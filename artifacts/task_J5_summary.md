@@ -1,5 +1,10 @@
 # Task Summary: J1-J5 DeepSeek/ChatDatabricks Runtime Verification
 
+> Historical experiment: production now serves
+> `ecommerce_agent.gold_layer.deepseek_v4_streaming_agent@4`. The `workspace`
+> registration below is the immutable source artifact copied by the canonical
+> registration notebook, not a production namespace default.
+
 **Sprint:** Sprint 1  
 **Tasks:** J1-J5  
 **Date:** 2026-07-15

@@ -1,0 +1,12 @@
+command:
+  - sh
+  - -c
+  - >-
+    uv run --frozen uvicorn ecommerce_agent.agent_app.server:app
+    --host 0.0.0.0 --port "${DATABRICKS_APP_PORT:-8000}"
+
+env:
+  - name: MLFLOW_TRACKING_URI
+    value: databricks
+  - name: MLFLOW_REGISTRY_URI
+    value: databricks-uc

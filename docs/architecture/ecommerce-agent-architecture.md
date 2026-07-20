@@ -63,7 +63,8 @@ misleading logo.
 The production runtime is the **Agent App**. It is deployed on Databricks Apps
 and exposes the MLflow Responses API contract:
 
-1. An authenticated client sends a `/responses` request.
+1. An authenticated external App client sends a `/api/responses` request
+   (MLflow's native `/responses` route remains available inside AgentServer).
 2. MLflow `AgentServer` handles invoke and streaming transport.
 3. `CoreAgent`, implemented as an MLflow `ResponsesAgent`, translates the
    request to the LangChain message contract and preserves tool-call and
