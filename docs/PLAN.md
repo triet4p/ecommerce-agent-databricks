@@ -2,13 +2,14 @@
 
 ## Overview
 
-Stabilize the e-commerce support prototype into a tested, deployable Databricks
-Apps agent. The implementation must keep `agent_core` use-case-independent,
-remove stale `projects/ecommerce_support` assumptions, replace mock tools with
-verified behavior, and use only current APIs for the locked dependency line.
-The project also serves as a hands-on study vehicle for the Databricks Certified
-Generative AI Engineer Associate exam without allowing study-only or superseded
-patterns to become production fallbacks.
+Evolve the completed Sprint 1 Databricks Apps agent into a stateful,
+production-quality conversational experience. The next delivery sequence first
+stabilizes a UI-independent Responses API streaming contract, then adds durable
+per-user session history in Lakebase, and finally replaces the temporary
+Streamlit client with a React chat application based on the current official
+Databricks template. The implementation must keep `agent_core`
+use-case-independent and preserve the verified Agent App, MCP, Unity Catalog,
+DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
 
 ## Version and Architecture Baseline
 
@@ -42,6 +43,15 @@ patterns to become production fallbacks.
   including resource creation, deployment, grants, compute, and cleanup. They
   must preserve catalog `ecommerce_agent`, secrets, unrelated resources, and the
   safety boundaries in `.agents/rules/databricks.md`.
+- Public UI surfaces expose text deltas, tool activity, safe progress states,
+  and optional sanitized reasoning summaries. Raw provider chain-of-thought or
+  `reasoning_content` remains private to the model boundary and trace controls.
+- Lakebase Autoscaling is the primary transactional store for conversation
+  sessions. Delta tables are reserved for downstream analytics or audit, not
+  synchronous chat-state reads and writes.
+- The Agent App remains the stable Responses API backend while the Chat UI App
+  owns end-user conversation navigation and persistence. A future topology
+  consolidation requires a separate architecture decision.
 
 ## Milestones
 
@@ -55,12 +65,30 @@ patterns to become production fallbacks.
 - [x] **Milestone 4:** Complete current certification labs for UC functions,
   MCP, Apps, MLflow/pyfunc, Model Serving, Vector Search, prompt lifecycle,
   evaluation, governance, and AI Gateway.
-- [ ] **Milestone 5:** Run offline MLflow evaluation, establish quality gates,
+- [ ] **Milestone 5:** Deliver real token streaming, tool-use visualization,
+  safe progress visualization, and robust SSE error handling in the temporary
+  Streamlit client.
+- [ ] **Milestone 6:** Persist isolated per-user conversation sessions in
+  Lakebase and replay the complete bounded session history on every agent turn.
+- [ ] **Milestone 7:** Replace Streamlit with a tested React chat UI while
+  preserving the Sprint 2 event contract and Sprint 3 conversation data.
+- [ ] **Milestone 8:** Run offline MLflow evaluation, establish quality gates,
   and productionize observability and CI/CD.
 
 ## Active Sprints
 
-- None. Sprint 2 will cover evaluation quality gates, CI/CD, and observability.
+- [Sprint 2](sprint-plans/sprint-2.md) — planned next: Responses API token
+  streaming, tool-use timeline, safe progress visualization, and temporary
+  Streamlit rendering.
+- [Sprint 3](sprint-plans/sprint-3.md) — queued after Sprint 2: Lakebase-backed
+  per-user session history and complete bounded-history replay.
+- [Sprint 4](sprint-plans/sprint-4.md) — queued after Sprint 3: migrate the Chat
+  UI App from Streamlit to React using the official Databricks chat template as
+  the baseline.
+
+Execution dependency: Sprint 2 event contract -> Sprint 3 canonical persisted
+conversation items -> Sprint 4 React consumer. No Sprint 3 or Sprint 4 task may
+invent a second incompatible agent event schema.
 
 ## Documentation and Certification Index
 
@@ -82,8 +110,17 @@ patterns to become production fallbacks.
   introducing automatic runtime fallback between them.
 - Add a Unity Catalog Volume-backed skill provider only when skills require an
   independent publishing lifecycle outside Git and application deployments.
-- Add CI/CD, load testing, and online monitoring after the successful
-  credentialed deployment.
+- Add CI/CD, load testing, offline evaluation quality gates, and online
+  monitoring after the conversational UX milestones are complete.
+- Add cross-session semantic or long-term memory only after the short-term
+  conversation-history contract is stable. Re-evaluate Databricks managed
+  agent memory at that point; it is not the Sprint 3 MVP store.
+- Add summarization or context compaction after measuring real session lengths.
+  Sprint 3 keeps every item in durable storage and bounds what one session may
+  send to the existing 100,000-character Agent App safety limit.
+- Optionally stream Lakebase conversation changes to a governed Delta table for
+  analytics and audit after retention, redaction, and access policies are
+  approved.
 - Re-evaluate inference tables, usage tracking, and QPM when the workspace
   exposes AI Gateway controls for this custom endpoint type. Until then, retain
   the verified application input/output/graph-step safety envelope.
