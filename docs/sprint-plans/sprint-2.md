@@ -45,79 +45,79 @@ Status legend: [ ] pending / [~] in progress / [x] done
 
 ### A. Freeze the public event contract
 
-- [ ] **S2-A1:** Document the supported inbound Responses API request fields and
+- [x] **S2-A1:** Document the supported inbound Responses API request fields and
   outbound SSE event types for the Chat UI App.
-- [ ] **S2-A2:** Define one typed internal representation for assistant text
+- [x] **S2-A2:** Define one typed internal representation for assistant text
   deltas, completed messages, function calls, function outputs, progress, and
   terminal errors.
-- [ ] **S2-A3:** Define stable correlation rules for response ID, item ID, tool
+- [x] **S2-A3:** Define stable correlation rules for response ID, item ID, tool
   call ID, and request ID.
-- [ ] **S2-A4:** Define the browser-safe tool display policy, including friendly
+- [x] **S2-A4:** Define the browser-safe tool display policy, including friendly
   labels, argument allowlists, output truncation, and redaction.
-- [ ] **S2-A5:** Define the thinking-visualization policy: derived progress and
+- [x] **S2-A5:** Define the thinking-visualization policy: derived progress and
   optional sanitized summaries are public; raw provider reasoning is private.
 
 ### B. Produce real token and agent-event streaming
 
-- [ ] **S2-B1:** Add a focused test fixture that distinguishes token deltas from
+- [x] **S2-B1:** Add a focused test fixture that distinguishes token deltas from
   node-level completed-message events.
-- [ ] **S2-B2:** Subscribe to the LangGraph message stream needed to receive
+- [x] **S2-B2:** Subscribe to the LangGraph message stream needed to receive
   model chunks without removing the existing node updates used for tool events.
-- [ ] **S2-B3:** Convert visible model chunks into
+- [x] **S2-B3:** Convert visible model chunks into
   `response.output_text.delta` events with a stable assistant item ID.
-- [ ] **S2-B4:** Aggregate text chunks into exactly one final assistant
+- [x] **S2-B4:** Aggregate text chunks into exactly one final assistant
   `response.output_item.done` event.
-- [ ] **S2-B5:** Convert completed tool calls into correlated function-call
+- [x] **S2-B5:** Convert completed tool calls into correlated function-call
   output items without emitting partial or invalid JSON arguments.
-- [ ] **S2-B6:** Convert `ToolMessage` results into correlated
+- [x] **S2-B6:** Convert `ToolMessage` results into correlated
   function-call-output items.
-- [ ] **S2-B7:** Deduplicate assistant and tool items that appear in both
+- [x] **S2-B7:** Deduplicate assistant and tool items that appear in both
   LangGraph message and update streams.
-- [ ] **S2-B8:** Preserve the deterministic required-operation gate and prove it
+- [x] **S2-B8:** Preserve the deterministic required-operation gate and prove it
   cannot stream an unverified success result.
-- [ ] **S2-B9:** Propagate the platform streaming error envelope to clients
+- [x] **S2-B9:** Propagate the platform streaming error envelope to clients
   without synthesizing a completion event.
-- [ ] **S2-B10:** Return trace metadata through the supported response contract
+- [x] **S2-B10:** Return trace metadata through the supported response contract
   without placing trace internals in future chat history.
 
 ### C. Render the stream in the temporary Streamlit UI
 
-- [ ] **S2-C1:** Replace the Chat UI's non-streaming POST with an authenticated
+- [x] **S2-C1:** Replace the Chat UI's non-streaming POST with an authenticated
   streaming request while retaining the current 180-second outer timeout.
-- [ ] **S2-C2:** Implement an incremental SSE parser that handles comments,
+- [x] **S2-C2:** Implement an incremental SSE parser that handles comments,
   blank lines, JSON events, `[DONE]`, malformed data, and early disconnects.
-- [ ] **S2-C3:** Render assistant text deltas into one updating chat-message
+- [x] **S2-C3:** Render assistant text deltas into one updating chat-message
   placeholder.
-- [ ] **S2-C4:** Render each correlated tool call and result as one status card
+- [x] **S2-C4:** Render each correlated tool call and result as one status card
   with queued/running/succeeded/failed states.
-- [ ] **S2-C5:** Render safe phase labels such as analyzing, querying, and
+- [x] **S2-C5:** Render safe phase labels such as analyzing, querying, and
   composing from public events without showing raw reasoning text.
-- [ ] **S2-C6:** Display terminal failures with a retry action and retain the
+- [x] **S2-C6:** Display terminal failures with a retry action and retain the
   user's submitted text.
-- [ ] **S2-C7:** Keep the existing terminal-response parser for the MCP facade
+- [x] **S2-C7:** Keep the existing terminal-response parser for the MCP facade
   and non-streaming compatibility tests.
 
 ### D. Verification and deployment
 
-- [ ] **S2-D1:** Add parser tests for fragmented SSE boundaries and multiple
+- [x] **S2-D1:** Add parser tests for fragmented SSE boundaries and multiple
   events arriving in one network chunk.
-- [ ] **S2-D2:** Add reducer tests for text aggregation, tool correlation,
+- [x] **S2-D2:** Add reducer tests for text aggregation, tool correlation,
   duplicate suppression, and terminal errors.
-- [ ] **S2-D3:** Add a repository test that fails if public UI payloads contain
+- [x] **S2-D3:** Add a repository test that fails if public UI payloads contain
   `reasoning_content`, authorization values, or configured secret names.
-- [ ] **S2-D4:** Add an Agent App contract test that asserts more than one real
+- [x] **S2-D4:** Add an Agent App contract test that asserts more than one real
   text delta for a deterministic fake streamed response.
-- [ ] **S2-D5:** Add a tool-loop contract test that asserts event ordering and
+- [x] **S2-D5:** Add a tool-loop contract test that asserts event ordering and
   correlation IDs.
-- [ ] **S2-D6:** Run the local unit suite, compile check, Ruff check, and Ruff
+- [x] **S2-D6:** Run the local unit suite, compile check, Ruff check, and Ruff
   format check.
-- [ ] **S2-D7:** Validate and deploy the development Bundle without creating a
+- [x] **S2-D7:** Validate and deploy the development Bundle without creating a
   third Model Serving endpoint.
-- [ ] **S2-D8:** Run a credentialed OAuth smoke that records text-delta count,
+- [x] **S2-D8:** Run a credentialed OAuth smoke that records text-delta count,
   tool-call count, tool-result count, terminal message count, and `[DONE]`.
-- [ ] **S2-D9:** Inspect the deployed App logs and MLflow trace for the verified
+- [x] **S2-D9:** Inspect the deployed App logs and MLflow trace for the verified
   smoke without copying sensitive trace payloads into artifacts.
-- [ ] **S2-D10:** Update the architecture document and closeout artifact with the
+- [x] **S2-D10:** Update the architecture document and closeout artifact with the
   final event contract and measured behavior.
 
 ## Official Databricks and MLflow Documentation
