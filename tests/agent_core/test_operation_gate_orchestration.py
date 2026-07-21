@@ -64,7 +64,7 @@ def test_streaming_withholds_output_when_required_operation_is_missing(monkeypat
 
     class FakeGraph:
         def stream(self, *_args, **_kwargs):
-            yield "agent", {"agent": {"messages": [object()]}}
+            yield "updates", {"agent": {"messages": [object()]}}
 
     core.graph = FakeGraph()
     monkeypatch.setattr(
@@ -89,9 +89,9 @@ def test_optional_streaming_yields_before_graph_completes(monkeypatch):
         def stream(self, *_args, **kwargs):
             graph_calls.append(kwargs)
             consumed.append("first")
-            yield "agent", {"agent": {"messages": [object()]}}
+            yield "updates", {"agent": {"messages": [object()]}}
             consumed.append("second")
-            yield "agent", {"agent": {"messages": [object()]}}
+            yield "updates", {"agent": {"messages": [object()]}}
 
     core.graph = FakeGraph()
     monkeypatch.setattr(

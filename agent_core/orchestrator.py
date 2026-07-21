@@ -23,6 +23,7 @@ from uuid import uuid4
 
 from databricks_langchain import ChatDatabricks
 from langchain.agents import create_agent
+from langchain_core.messages import AIMessageChunk
 from langchain_core.tools import StructuredTool
 from mlflow.pyfunc import ResponsesAgent
 from mlflow.types.responses import (
@@ -91,6 +92,19 @@ def _make_sync_tool_adapters(tools: list[Any]) -> list[Any]:
     return adapted
 
 
+def _safe_string(value: Any) -> str:
+    """Convert an arbitrary value to a string for safe concatenation.
+
+    The DeepSeek Responses API may return ``text`` fields as strings or as
+    lists (e.g. ``["Hello"]``).  Normalise to a string regardless.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(str(v) for v in value)
+    return str(value)
+
+
 def _responses_safe_messages(messages: list[Any]) -> list[Any]:
     """Adapt Responses-style LangChain content blocks for MLflow 3.14 output.
 
@@ -107,14 +121,154 @@ def _responses_safe_messages(messages: list[Any]) -> list[Any]:
             normalized.append(message)
             continue
         visible_text = "".join(
-            block.get("text", "")
+            _safe_string(block.get("text"))
             for block in content
-            if isinstance(block, dict)
-            and block.get("type") in {"text", "output_text"}
-            and isinstance(block.get("text"), str)
+            if isinstance(block, dict) and block.get("type") in {"text", "output_text"}
         )
         normalized.append(message.model_copy(update={"content": visible_text}))
     return normalized
+
+
+# ---------------------------------------------------------------------------
+# Text streaming helpers (Sprint 2 — dual stream-mode support)
+# ---------------------------------------------------------------------------
+
+
+class _TextAggregator:
+    """Track text chunks from ``messages`` stream mode for deduplication.
+
+    When dual stream mode is active, text content arrives both as incremental
+    chunks (``messages`` mode → ``AIMessageChunk``) and as completed messages
+    (``updates`` mode → ``AIMessage``). This class tracks which message IDs
+    have been streamed as deltas so the completed item from the updates path
+    can be suppressed and replaced with a single aggregated done event.
+    """
+
+    def __init__(self) -> None:
+        self._buffers: dict[str, str] = {}
+        self._streamed_ids: set[str] = set()
+
+    def record_chunk(self, chunk: AIMessageChunk) -> str | None:
+        """Accumulate text content from a message chunk.
+
+        Returns:
+            The item_id for the chunk, or ``None`` if the chunk had no text.
+        """
+        msg_id = getattr(chunk, "id", None) or str(uuid4())
+        content = getattr(chunk, "content", None)
+        if not content:
+            return None
+        # The Responses API may return content as a list of blocks.
+        # Extract only visible text to avoid accumulating reasoning content.
+        if isinstance(content, list):
+            text_parts: list[str] = []
+            for block in content:
+                if isinstance(block, dict) and block.get("type") in {
+                    "text",
+                    "output_text",
+                }:
+                    text_parts.append(_safe_string(block.get("text", "")))
+            safe_text = "".join(text_parts) if text_parts else ""
+        else:
+            safe_text = _safe_string(content)
+        if not safe_text:
+            return None
+        self._buffers.setdefault(msg_id, "")
+        self._buffers[msg_id] += safe_text
+        return msg_id
+
+    def mark_streamed(self, msg_id: str) -> None:
+        """Record that this message ID was fully streamed as text deltas."""
+        self._streamed_ids.add(msg_id)
+
+    def was_streamed(self, msg_id: str) -> bool:
+        """Return ``True`` if this message ID was already streamed as deltas."""
+        return msg_id in self._streamed_ids
+
+    def flush_done_events(
+        self,
+    ) -> Generator[ResponsesAgentStreamEvent, None, None]:
+        """Yield ``response.output_item.done`` events for accumulated text."""
+        from mlflow.types.responses import (
+            ResponsesAgentStreamEvent,
+            create_text_output_item,
+        )
+
+        for msg_id, text in self._buffers.items():
+            if msg_id not in self._streamed_ids:
+                continue
+            item = create_text_output_item(text, id=msg_id)
+            yield ResponsesAgentStreamEvent(type="response.output_item.done", item=item)
+
+
+def _message_chunk_to_delta_events(
+    chunk: AIMessageChunk,
+    metadata: dict[str, Any],  # noqa: ARG001  — kept for future extensibility
+    aggregator: _TextAggregator | None = None,
+) -> Generator[ResponsesAgentStreamEvent, None, None]:
+    """Convert an ``AIMessageChunk`` into ``response.output_text.delta`` events.
+
+    Args:
+        chunk: Message chunk from LangGraph's ``messages`` stream mode.
+        metadata: Metadata dict (``langgraph_node``, ``langgraph_step``, …).
+        aggregator: Optional aggregator for deduplication tracking.
+
+    Yields:
+        ``ResponsesAgentStreamEvent`` objects of type ``response.output_text.delta``.
+    """
+    from mlflow.types.responses import (
+        ResponsesAgentStreamEvent,
+        create_text_delta,
+    )
+
+    content = getattr(chunk, "content", None)
+    if not content:
+        return
+
+    # Responses API may return content as a list of blocks (text, reasoning, …).
+    # Extract only visible text blocks to avoid leaking reasoning content.
+    if isinstance(content, list):
+        text_parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") in {"text", "output_text"}:
+                text_parts.append(_safe_string(block.get("text", "")))
+        if not text_parts:
+            return  # Nothing visible — skip this chunk entirely.
+        visible = "".join(text_parts)
+    else:
+        visible = _safe_string(content)
+
+    msg_id = getattr(chunk, "id", None) or str(uuid4())
+
+    if aggregator is not None:
+        aggregator.record_chunk(chunk)
+        aggregator.mark_streamed(msg_id)
+
+    if visible:
+        yield ResponsesAgentStreamEvent(**create_text_delta(visible, item_id=msg_id))
+
+
+def _deduplicate_stream_events(
+    stream_events: Generator[ResponsesAgentStreamEvent, None, None],
+    aggregator: _TextAggregator,
+) -> Generator[ResponsesAgentStreamEvent, None, None]:
+    """Suppress completed text items that were already streamed as deltas.
+
+    Passes through non-message events and raw strings (used by test stubs)
+    without filtering.
+    """
+    for event in stream_events:
+        # Test stubs may inject raw strings instead of stream events.
+        if isinstance(event, str):
+            yield event
+            continue
+        if getattr(event, "type", None) == "response.output_item.done":
+            item = getattr(event, "item", None) or {}
+            if isinstance(item, dict) and item.get("type") == "message":
+                item_id = item.get("id", "")
+                if aggregator.was_streamed(item_id):
+                    continue  # Already emitted as text deltas
+        yield event
 
 
 def _build_graph(
@@ -262,35 +416,88 @@ class CoreAgent(ResponsesAgent):
         # Optional/read-only tool requests must preserve real-time SSE output.
         buffer_until_verified = bool(operation_gate.report_unsatisfied())
         buffered_events: list[ResponsesAgentStreamEvent] = []
-        for _chunk_name, events in self.graph.stream(
-            {"messages": cc_msgs},
-            config={
-                "configurable": {"thread_id": thread_id},
-                "recursion_limit": MAX_AGENT_GRAPH_STEPS,
-            },
-            stream_mode=["updates"],
-        ):
-            for node_data in events.values():
-                messages = node_data.get("messages", [])
-                for msg in messages:
-                    # Track tool calls for OperationGate
-                    self._track_tool_calls(
-                        msg,
-                        gate=operation_gate,
-                        pending_tool_results=pending_tool_results,
-                    )
-                stream_events = output_to_responses_items_stream(
-                    _responses_safe_messages(messages)
-                )
-                if buffer_until_verified:
-                    # A required workflow cannot expose a success item before
-                    # its mandatory operation has produced a correlated result.
-                    buffered_events.extend(stream_events)
-                else:
-                    yield from stream_events
 
-        # Verify required tools after streaming completes.
-        self._verify_required_operations(gate=operation_gate)
+        # Sprint 2: dual stream-mode — "messages" for token-level text deltas,
+        # "updates" for node-level completed items (tool calls, results).
+        text_aggregator = _TextAggregator()
+
+        # Track whether an error was emitted to prevent synthesizing a
+        # completion event after it (S2-B9).
+        _error_emitted = False
+
+        try:
+            for mode, data in self.graph.stream(
+                {"messages": cc_msgs},
+                config={
+                    "configurable": {"thread_id": thread_id},
+                    "recursion_limit": MAX_AGENT_GRAPH_STEPS,
+                },
+                stream_mode=["updates", "messages"],
+            ):
+                if mode == "messages":
+                    # Token-level chunks from the streaming LLM.
+                    msg_chunk, metadata = data
+                    for event in _message_chunk_to_delta_events(
+                        msg_chunk,
+                        metadata,
+                        aggregator=text_aggregator,
+                    ):
+                        if buffer_until_verified:
+                            buffered_events.append(event)
+                        else:
+                            yield event
+
+                elif mode == "updates":
+                    # Node-level completed items.
+                    for node_data in data.values():
+                        messages = node_data.get("messages", [])
+                        for msg in messages:
+                            # Track tool calls for OperationGate
+                            self._track_tool_calls(
+                                msg,
+                                gate=operation_gate,
+                                pending_tool_results=pending_tool_results,
+                            )
+                        stream_events = output_to_responses_items_stream(
+                            _responses_safe_messages(messages)
+                        )
+                        # Deduplicate text items already streamed as deltas.
+                        deduped = _deduplicate_stream_events(
+                            stream_events, text_aggregator
+                        )
+                        if buffer_until_verified:
+                            buffered_events.extend(deduped)
+                        else:
+                            yield from deduped
+
+        except Exception as exc:
+            # S2-B9: Catch upstream errors and yield an error event instead of
+            # synthesizing a completion.
+            logger.warning("Streaming error: %s", exc)
+            error_event = ResponsesAgentStreamEvent(
+                type="error",
+                code="INTERNAL_ERROR",
+                message=str(exc),
+            )
+            if buffer_until_verified:
+                buffered_events.append(error_event)
+            else:
+                yield error_event
+            _error_emitted = True
+
+        # S2-B9: Do not emit aggregated events or gate verification after an
+        # error. The client receives the error and must not see a completion.
+        if not _error_emitted:
+            # Emit aggregated text-output done events for streamed content.
+            for event in text_aggregator.flush_done_events():
+                if buffer_until_verified:
+                    buffered_events.append(event)
+                else:
+                    yield event
+
+            # Verify required tools after streaming completes.
+            self._verify_required_operations(gate=operation_gate)
+
         if buffer_until_verified:
             yield from buffered_events
 
