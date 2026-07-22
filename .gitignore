@@ -9,3 +9,4 @@
 
 # Local MLflow file-store database produced by offline tests.
 mlflow.db
+mlruns/
