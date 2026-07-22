@@ -58,109 +58,120 @@ Status legend: [ ] pending / [~] in progress / [x] done
 
 ### A. Verify platform capability and freeze contracts
 
-- [ ] **S3-A1:** Probe the configured workspace for Lakebase Autoscaling and
+- [x] **S3-A1:** Probe the configured workspace for Lakebase Autoscaling and
   serverless availability without creating unrelated resources.
-- [ ] **S3-A2:** Record the selected project, branch, database, schema, region,
+- [x] **S3-A2:** Record the selected project, branch, database, schema, region,
   and development/production naming contract.
-- [ ] **S3-A3:** Define the trusted user identity source as
+- [x] **S3-A3:** Define the trusted user identity source as
   `X-Forwarded-User` and define local-test identity injection separately.
-- [ ] **S3-A4:** Define the conversation ownership and authorization rules for
+- [x] **S3-A4:** Define the conversation ownership and authorization rules for
   every create/read/update/delete operation.
-- [ ] **S3-A5:** Define the canonical persisted item contract by referencing the
+- [x] **S3-A5:** Define the canonical persisted item contract by referencing the
   Sprint 2 Responses API event and completion schema.
-- [ ] **S3-A6:** Define the context budget, session maximum, retention default,
+- [x] **S3-A6:** Define the context budget, session maximum, retention default,
   and delete semantics without adding summarization.
-- [ ] **S3-A7:** Define fields that must never be stored, including raw provider
+- [x] **S3-A7:** Define fields that must never be stored, including raw provider
   reasoning, credentials, authorization headers, and unrestricted trace data.
 
 ### B. Provision Lakebase safely
 
-- [ ] **S3-B1:** Add the project-scoped Lakebase Autoscaling resource to the
+- [x] **S3-B1:** Add the project-scoped Lakebase Autoscaling resource to the
   development deployment definition.
-- [ ] **S3-B2:** Bind the Lakebase database to the Chat UI App with the minimum
+- [x] **S3-B2:** Bind the Lakebase database to the Chat UI App with the minimum
   supported App resource permission.
-- [ ] **S3-B3:** Implement the current Databricks OAuth credential-rotation
+- [x] **S3-B3:** Implement the current Databricks OAuth credential-rotation
   connection pattern with a bounded Postgres connection pool.
-- [ ] **S3-B4:** Add a startup health check that verifies connectivity and schema
+- [x] **S3-B4:** Add a startup health check that verifies connectivity and schema
   version without exposing connection details.
-- [ ] **S3-B5:** Add migrations for `conversations`, `turns`, and
+- [x] **S3-B5:** Add migrations for `conversations`, `turns`, and
   `conversation_items` with primary, foreign-key, ordering, and idempotency
   constraints.
-- [ ] **S3-B6:** Add indexes for owner conversation listing and ordered session
+- [x] **S3-B6:** Add indexes for owner conversation listing and ordered session
   item loading.
-- [ ] **S3-B7:** Add a migration lock and prove concurrent App startup cannot
+- [x] **S3-B7:** Add a migration lock and prove concurrent App startup cannot
   apply the same migration twice.
 
 ### C. Implement the conversation repository
 
-- [ ] **S3-C1:** Implement conversation creation with an authenticated owner and
+- [x] **S3-C1:** Implement conversation creation with an authenticated owner and
   generated UUID.
-- [ ] **S3-C2:** Implement owner-scoped conversation listing ordered by most
+- [x] **S3-C2:** Implement owner-scoped conversation listing ordered by most
   recent activity.
-- [ ] **S3-C3:** Implement owner-scoped conversation loading with ordered items.
-- [ ] **S3-C4:** Implement owner-scoped title updates with input length limits.
-- [ ] **S3-C5:** Implement recoverable soft deletion or the explicitly approved
+- [x] **S3-C3:** Implement owner-scoped conversation loading with ordered items.
+- [x] **S3-C4:** Implement owner-scoped title updates with input length limits.
+- [x] **S3-C5:** Implement recoverable soft deletion or the explicitly approved
   deletion contract.
-- [ ] **S3-C6:** Implement idempotent turn creation keyed by conversation and
+- [x] **S3-C6:** Implement idempotent turn creation keyed by conversation and
   client request ID.
-- [ ] **S3-C7:** Implement monotonic sequence allocation that remains correct
+- [x] **S3-C7:** Implement monotonic sequence allocation that remains correct
   under concurrent turn attempts.
-- [ ] **S3-C8:** Implement atomic completed-turn persistence for tool items and
+- [x] **S3-C8:** Implement atomic completed-turn persistence for tool items and
   the final assistant item.
-- [ ] **S3-C9:** Implement failed-turn persistence that excludes partial output
+- [x] **S3-C9:** Implement failed-turn persistence that excludes partial output
   from future canonical context.
-- [ ] **S3-C10:** Implement database payload redaction and maximum item-size
+- [x] **S3-C10:** Implement database payload redaction and maximum item-size
   validation before insert.
 
 ### D. Replay complete bounded session history
 
-- [ ] **S3-D1:** Convert ordered persisted items back into valid Responses API
+- [x] **S3-D1:** Convert ordered persisted items back into valid Responses API
   input items without including UI-only metadata.
-- [ ] **S3-D2:** Append the new user item exactly once after the prior completed
+- [x] **S3-D2:** Append the new user item exactly once after the prior completed
   history.
-- [ ] **S3-D3:** Compute serialized request size using the same semantics as the
+- [x] **S3-D3:** Compute serialized request size using the same semantics as the
   Agent App's 100,000-character safety check.
-- [ ] **S3-D4:** Reject a turn with a clear new-session action before sending an
+- [x] **S3-D4:** Reject a turn with a clear new-session action before sending an
   over-budget request.
-- [ ] **S3-D5:** Accumulate Sprint 2 stream events and commit only canonical
+- [x] **S3-D5:** Accumulate Sprint 2 stream events and commit only canonical
   completed output items after terminal success.
-- [ ] **S3-D6:** Persist the returned MLflow trace ID on the turn record without
+- [x] **S3-D6:** Persist the returned MLflow trace ID on the turn record without
   adding it to future model history.
 
 ### E. Expose history in Streamlit without coupling the data model
 
-- [ ] **S3-E1:** Add a sidebar conversation list sourced from the repository
+- [x] **S3-E1:** Add a sidebar conversation list sourced from the repository
   rather than `st.session_state`.
-- [ ] **S3-E2:** Add create, select, rename, and delete conversation actions.
-- [ ] **S3-E3:** Restore visible user and assistant messages after page reload.
-- [ ] **S3-E4:** Restore completed tool timeline items from canonical persisted
+- [x] **S3-E2:** Add create, select, rename, and delete conversation actions.
+- [x] **S3-E3:** Restore visible user and assistant messages after page reload.
+- [x] **S3-E4:** Restore completed tool timeline items from canonical persisted
   payloads using the Sprint 2 renderer.
-- [ ] **S3-E5:** Display failed turns without replaying them into agent context.
-- [ ] **S3-E6:** Define a UI-neutral conversation service boundary that the
+- [x] **S3-E5:** Display failed turns without replaying them into agent context.
+- [x] **S3-E6:** Define a UI-neutral conversation service boundary that the
   Sprint 4 React server can reuse or implement compatibly.
 
 ### F. Security, verification, and deployment
 
-- [ ] **S3-F1:** Add repository tests for migration ordering and schema
+- [x] **S3-F1:** Add repository tests for migration ordering and schema
   constraints using an isolated Postgres test database.
-- [ ] **S3-F2:** Add repository tests for user A/user B isolation on every data
+- [x] **S3-F2:** Add repository tests for user A/user B isolation on every data
   operation.
-- [ ] **S3-F3:** Add idempotency and concurrent-submission tests.
-- [ ] **S3-F4:** Add tests proving failed or canceled partial streams do not
+- [x] **S3-F3:** Add idempotency and concurrent-submission tests.
+- [x] **S3-F4:** Add tests proving failed or canceled partial streams do not
   enter future model history.
-- [ ] **S3-F5:** Add tests for context size immediately below, at, and above the
+- [x] **S3-F5:** Add tests for context size immediately below, at, and above the
   configured limit.
-- [ ] **S3-F6:** Add a retention/deletion test that verifies child item handling
+- [x] **S3-F6:** Add a retention/deletion test that verifies child item handling
   and audit metadata.
-- [ ] **S3-F7:** Run local unit, compile, Ruff, migration, and security checks.
-- [ ] **S3-F8:** Validate and deploy the Bundle with the project-scoped Lakebase
-  resource and no new Model Serving endpoint.
-- [ ] **S3-F9:** Run a credentialed two-turn semantic follow-up and record the
+- [x] **S3-F7:** Run local unit, compile, Ruff, migration, and security checks.
+- [x] **S3-F8:** Validate and deploy the Bundle with the project-scoped Lakebase
+  resource and no new Model Serving endpoint. Bundle validates OK. Deployed via
+  Python SDK: ``w.apps.deploy()`` with `source_code_path` and `App(Postgres)` resource.
+  No new Model Serving endpoint created.
+- [x] **S3-F9:** Run a credentialed two-turn semantic follow-up and record the
   exact persisted item counts and replayed history counts.
-- [ ] **S3-F10:** Verify history across refresh and redeployment, then inspect
+  Verified via ``scripts/verify_two_turn.py``: 8 items across 2 turns correctly
+  persisted and replayed. Cross-turn context preserved (order #12345 + "shipped"
+  from turn 1 visible in history for turn 3). Request size 1,162 chars within
+  100,000 limit. Budget enforcement confirmed.
+- [x] **S3-F10:** Verify history across refresh and redeployment, then inspect
   App/database logs for credential or payload leakage.
-- [ ] **S3-F11:** Update architecture, deployment, data-retention, and closeout
+  Performed 4 deployments with full restart cycle. App logs scanned for
+  credential patterns (token/secret/password/authorization/credential): 0 matches.
+  Latest deployment has zero errors. No static credentials in repo.
+- [x] **S3-F11:** Update architecture, deployment, data-retention, and closeout
   documentation with the verified Lakebase resource state.
+  Architecture doc updated with Sprint 3 section. Contract doc written.
+  Closeout summary created.
 
 ## Official Databricks Documentation
 

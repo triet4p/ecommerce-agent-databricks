@@ -67,13 +67,18 @@ resources:
 
     ecommerce_agent_chat_ui:
       name: ecommerce-agent-chat-ui
-      description: Streamlit chat UI that invokes the agent App through OAuth.
+      description: Streamlit chat UI with Lakebase-backed conversation persistence.
       source_code_path: ecommerce_agent/apps/chat_ui
       resources:
         - name: agent-app
           app:
             name: ${resources.apps.ecommerce_agent.name}
             permission: CAN_USE
+        - name: conversation-store
+          postgres:
+            branch: projects/ecommerce-agent-conversations/branches/production
+            database: projects/ecommerce-agent-conversations/branches/production/databases/databricks-postgres
+            permission: CAN_CONNECT_AND_CREATE
 
     ecommerce_agent_mcp_facade:
       name: ecommerce-agent-mcp-facade

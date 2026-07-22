@@ -11,6 +11,59 @@ Rendered previews:
 - [Data and Delivery](previews/architecture-page-2.png)
 - [Placement Decisions](previews/architecture-page-3.png)
 
+## Sprint 3 — Lakebase Conversation Persistence
+
+**Status:** Implemented (2026-07-21)
+
+### Overview
+
+Sprint 3 added durable per-user conversation history using Lakebase Autoscaling
+as the OLTP store. The Chat UI App now persists every canonical conversation item
+and replays the complete bounded history to the stateless Agent App on each turn.
+
+### Lakebase Resource
+
+| Aspect | Value |
+|--------|-------|
+| Project | `ecommerce-agent-conversations` (AWS us-east-2) |
+| Branch | `production` (auto-created) |
+| Database | `databricks-postgres` (auto-created; renamed from `conversation_store` planned name) |
+| Schema | `conversations` (created by App startup migration) |
+| App binding | `CAN_CONNECT_AND_CREATE` on the Chat UI App |
+| Auth | OAuth credential rotation via injected environment variables |
+| Pool | Bounded async pool (1-5 connections, 30-min max lifetime) |
+
+### Schema
+
+Three tables owned by the App service principal:
+
+- `conversations` — per-user conversation container with owner, title, timestamps, soft-delete
+- `turns` — per-turn record with client_request_id for idempotency, monotonic sequence, status tracking
+- `conversation_items` — canonical Responses API output items with item_type, role, JSONB payload
+
+### Data Flow
+
+```
+User Message → Chat UI App → Create Turn (Lakebase) → Build Replay (Lakebase read) →
+  → Agent App via OAuth → Stream Events → Accumulate Output Items →
+  → Complete Turn (Lakebase write) → Display Response
+```
+
+### Key Design Decisions
+
+- **Idempotent turns:** `(conversation_id, client_request_id)` unique constraint
+  enables safe retry without duplication.
+- **Failed turns:** Marked `failed` in the database; items from failed turns are
+  excluded from history replay.
+- **Budget enforcement:** Replay is capped at 100,000 characters. Over-budget
+  requests are rejected before reaching the Agent App.
+- **Redaction:** `reasoning_content`, `authorization`, keys matching
+  `token|secret|password` are stripped before persisting.
+- **UI-neutral boundary:** `ConversationService` wraps the repository and replay
+  logic; it's usable by both Streamlit (Sprint 3) and React (Sprint 4).
+- **No summarization:** All items are kept in full. Summarization is deferred
+  until after real session lengths are measured.
+
 ## Purpose
 
 This document is the durable architecture reference for the e-commerce support
