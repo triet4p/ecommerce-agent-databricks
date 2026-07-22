@@ -1,4 +1,5 @@
 """Attach Lakebase Postgres resource to the Chat UI App."""
+
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.apps import (
     App,

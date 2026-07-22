@@ -28,12 +28,17 @@ from .replay import (
     build_replay_request,
 )
 from .schema import check_schema_version, migrate
+from .identity import normalize_owner
 
 # ---------------------------------------------------------------------------
 # Public exceptions (re-exported)
 # ---------------------------------------------------------------------------
 
 ConversationNotFound = ConversationNotFoundError
+
+
+class StreamNotTerminalError(ValueError):
+    """The caller attempted to complete a turn without terminal success."""
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +120,7 @@ class ConversationService:
         self, owner: str, title: str = "New conversation"
     ) -> Conversation:
         """Create a new conversation."""
-        return await self._repo.create_conversation(owner, title)
+        return await self._repo.create_conversation(normalize_owner(owner), title)
 
     async def list_conversations(
         self,
@@ -125,26 +130,30 @@ class ConversationService:
     ) -> list[ConversationSummary]:
         """List conversations for the given user."""
         return await self._repo.list_conversations(
-            owner, include_deleted=include_deleted, limit=limit
+            normalize_owner(owner), include_deleted=include_deleted, limit=limit
         )
 
     async def get_conversation(
         self, conversation_id: uuid.UUID, owner: str
     ) -> Conversation:
         """Get a single conversation by ID and owner."""
-        return await self._repo.get_conversation(conversation_id, owner)
+        return await self._repo.get_conversation(
+            conversation_id, normalize_owner(owner)
+        )
 
     async def update_title(
         self, conversation_id: uuid.UUID, owner: str, title: str
     ) -> Conversation:
         """Update the title of a conversation."""
-        return await self._repo.update_title(conversation_id, owner, title)
+        return await self._repo.update_title(
+            conversation_id, normalize_owner(owner), title
+        )
 
-    async def delete_conversation(
-        self, conversation_id: uuid.UUID, owner: str
-    ) -> None:
+    async def delete_conversation(self, conversation_id: uuid.UUID, owner: str) -> None:
         """Soft-delete a conversation."""
-        return await self._repo.soft_delete_conversation(conversation_id, owner)
+        return await self._repo.soft_delete_conversation(
+            conversation_id, normalize_owner(owner)
+        )
 
     # ------------------------------------------------------------------
     # Turn management
@@ -158,7 +167,7 @@ class ConversationService:
     ) -> Turn:
         """Create a new turn with idempotency via client_request_id."""
         return await self._repo.create_turn(
-            conversation_id, owner, client_request_id
+            conversation_id, normalize_owner(owner), client_request_id
         )
 
     async def complete_turn(
@@ -184,12 +193,20 @@ class ConversationService:
             A ``StreamCommitResult`` with the completed turn and accumulated
             output items.
         """
+        has_completion = any(
+            event.get("type") == "response.completed" for event in stream_events
+        )
+        has_error = any(event.get("type") == "error" for event in stream_events)
+        if not has_completion or has_error:
+            raise StreamNotTerminalError(
+                "A turn may complete only after response.completed without error"
+            )
         output_items = accumulate_output_items(stream_events)
 
         turn = await self._repo.complete_turn(
             turn_id=turn_id,
             conversation_id=conversation_id,
-            owner=owner,
+            owner=normalize_owner(owner),
             items=output_items,
             mlflow_trace_id=mlflow_trace_id,
             user_message=user_message,
@@ -204,7 +221,17 @@ class ConversationService:
         owner: str,
     ) -> Turn:
         """Mark a turn as failed (no output persisted)."""
-        return await self._repo.fail_turn(turn_id, conversation_id, owner)
+        return await self._repo.fail_turn(
+            turn_id, conversation_id, normalize_owner(owner)
+        )
+
+    async def cancel_turn(
+        self, turn_id: uuid.UUID, conversation_id: uuid.UUID, owner: str
+    ) -> Turn:
+        """Mark an interrupted active turn as cancelled."""
+        return await self._repo.cancel_turn(
+            turn_id, conversation_id, normalize_owner(owner)
+        )
 
     # ------------------------------------------------------------------
     # History replay
@@ -227,7 +254,9 @@ class ConversationService:
             ``input_items`` is ``None`` and the caller should inform the
             user instead of calling the agent.
         """
-        items = await self._repo.get_replay_items(conversation_id, owner)
+        items = await self._repo.get_replay_items(
+            conversation_id, normalize_owner(owner)
+        )
         input_items, char_count = build_replay_request(items, user_message)
 
         return ReplayResult(
@@ -240,11 +269,12 @@ class ConversationService:
         self,
         turn_id: uuid.UUID,
         conversation_id: uuid.UUID,
+        owner: str,
         mlflow_trace_id: str,
     ) -> None:
         """Set the MLflow trace ID on a turn."""
         await self._repo.set_mlflow_trace_id(
-            turn_id, conversation_id, mlflow_trace_id
+            turn_id, conversation_id, normalize_owner(owner), mlflow_trace_id
         )
 
     async def get_conversation_with_items(
@@ -254,5 +284,5 @@ class ConversationService:
     ) -> tuple[Conversation, list[ConversationItem]]:
         """Load conversation with all persisted items for UI restoration."""
         return await self._repo.get_conversation_with_items(
-            conversation_id, owner
+            conversation_id, normalize_owner(owner)
         )

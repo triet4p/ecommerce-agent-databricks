@@ -177,6 +177,7 @@ class TestSoftDelete:
 
         # Should not raise
         await repo.soft_delete_conversation(uuid.uuid4(), "user@test.com")
+        assert "UPDATE conversations SET deleted_at" in cursor.execute.call_args.args[0]
 
     async def test_soft_delete_not_found(self, repo, mock_pool):
         conn = MagicMock()
@@ -195,20 +196,21 @@ class TestCreateTurn:
         conn = MagicMock()
         _make_connection(mock_pool, conn, None)
 
-        # First call (get_conversation) -> cursor returns conv_row
-        # Second call (MAX sequence) -> cursor returns (0,)
-        # Third call (INSERT) -> cursor works
-        get_conv_cursor = _fake_cursor(fetch_result=conv_row)
-        max_seq_cursor = _fake_cursor(fetch_result=(1,))  # COALESCE(MAX(seq),0)+1 returns 1
-        insert_cursor = _fake_cursor(fetch_result=None)
-
-        conn.cursor = MagicMock(
-            side_effect=[get_conv_cursor, max_seq_cursor, insert_cursor]
+        turn_row = (
+            uuid.uuid4(),
+            conv_row[0],
+            "client-req-123",
+            1,
+            "active",
+            None,
+            _NOW,
+            None,
         )
+        cursor = _fake_cursor()
+        cursor.fetchone = AsyncMock(side_effect=[(conv_row[0],), (1,), turn_row])
+        conn.cursor = MagicMock(return_value=cursor)
 
-        result = await repo.create_turn(
-            uuid.uuid4(), "user@test.com", "client-req-123"
-        )
+        result = await repo.create_turn(uuid.uuid4(), "user@test.com", "client-req-123")
         assert result.client_request_id == "client-req-123"
         assert result.sequence == 1
 
@@ -217,7 +219,6 @@ class TestFailTurn:
     """S3-C9: Failed-turn persistence."""
 
     async def test_fail_turn(self, repo, mock_pool):
-        conv_row = (uuid.uuid4(), "user@test.com", "Test", _NOW, _NOW, None)
         turn_row = (
             uuid.uuid4(),
             uuid.uuid4(),
@@ -229,7 +230,6 @@ class TestFailTurn:
             _NOW,
         )
 
-        conv_cursor = _fake_cursor(fetch_result=conv_row)
         update_cursor = _fake_cursor(fetch_result=None, rowcount=1)
         # _touch_conversation needs a cursor (UPDATE conversations SET updated_at)
         touch_cursor = _fake_cursor(fetch_result=None, rowcount=1)
@@ -238,9 +238,7 @@ class TestFailTurn:
 
         conn = MagicMock()
         _make_connection(mock_pool, conn, None)
-        conn.cursor = MagicMock(
-            side_effect=[conv_cursor, update_cursor, touch_cursor, fetch_cursor]
-        )
+        conn.cursor = MagicMock(side_effect=[update_cursor, touch_cursor, fetch_cursor])
 
         turn = await repo.fail_turn(uuid.uuid4(), uuid.uuid4(), "user@test.com")
         assert turn.status == "failed"

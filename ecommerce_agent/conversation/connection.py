@@ -24,9 +24,8 @@ logger = logging.getLogger(__name__)
 # Lakebase endpoint — known from the provisioned project
 # ---------------------------------------------------------------------------
 
-_LAKEBASE_ENDPOINT = (
-    "projects/ecommerce-agent-conversations/"
-    "branches/production/endpoints/primary"
+_DEFAULT_LAKEBASE_ENDPOINT = (
+    "projects/ecommerce-agent-conversations/branches/production/endpoints/primary"
 )
 
 # ---------------------------------------------------------------------------
@@ -57,7 +56,11 @@ def _get_connection_params() -> dict[str, str]:
     user = os.environ.get("PGUSER") or os.environ.get("LAKEBASE_LOCAL_USER")
     port = os.environ.get("PGPORT") or os.environ.get("LAKEBASE_LOCAL_PORT", "5432")
 
-    missing = [k for k, v in [("PGHOST", host), ("PGDATABASE", dbname), ("PGUSER", user)] if not v]
+    missing = [
+        k
+        for k, v in [("PGHOST", host), ("PGDATABASE", dbname), ("PGUSER", user)]
+        if not v
+    ]
     if missing:
         raise LakebaseConnectionError(
             f"Missing Lakebase connection env vars: {', '.join(missing)}. "
@@ -89,18 +92,22 @@ async def _generate_token() -> str:
     Runs the synchronous SDK call in a thread executor so it doesn't block
     the async event loop on the background thread.
     """
-    logger.info("[DIAG-05] Generating OAuth token from endpoint %s", _LAKEBASE_ENDPOINT)
+    endpoint = os.environ.get("LAKEBASE_ENDPOINT", _DEFAULT_LAKEBASE_ENDPOINT)
+    logger.info("Generating Lakebase OAuth database credential")
     loop = asyncio.get_running_loop()
     ws = _get_ws()
     try:
         cred = await loop.run_in_executor(
             None,
-            lambda: ws.postgres.generate_database_credential(endpoint=_LAKEBASE_ENDPOINT),
+            lambda: ws.postgres.generate_database_credential(endpoint=endpoint),
         )
-        logger.info("[DIAG-06] Token generated OK (len=%d)", len(cred.token))
+        logger.info("Lakebase OAuth database credential generated")
         return cred.token
     except Exception as exc:
-        logger.warning("[DIAG-06-ERR] Token generation FAILED: %s", exc)
+        logger.warning(
+            "Lakebase OAuth database credential generation failed: %s",
+            type(exc).__name__,
+        )
         raise
 
 
@@ -119,12 +126,12 @@ class _LakebasePool(AsyncConnectionPool):
 
     async def _resolve_conninfo(self) -> str:
         pg = _get_connection_params()
-        logger.info("[DIAG-10] PG params OK: host=%s port=%s", pg["host"], pg["port"])
+        logger.info("Lakebase connection parameters resolved")
         return f"host={pg['host']} port={pg['port']} dbname={pg['dbname']} user={pg['user']}"
 
     async def _resolve_kwargs(self) -> dict[str, Any]:
         token = await _generate_token()
-        logger.info("[DIAG-11] Connecting ...")
+        logger.info("Opening Lakebase connection")
         return {
             "password": token,
             "connect_timeout": _CONNECT_TIMEOUT_S,
@@ -135,8 +142,8 @@ class _LakebasePool(AsyncConnectionPool):
 
 def create_pool() -> AsyncConnectionPool:
     """Create a bounded async Postgres connection pool for Lakebase."""
-    pg = _get_connection_params()
-    logger.info("Lakebase pool for %s@%s/%s", pg["user"], pg["host"], pg["dbname"])
+    _get_connection_params()
+    logger.info("Creating Lakebase connection pool")
     return _LakebasePool(
         conninfo="",  # _resolve_conninfo builds the real conninfo per-connect
         min_size=_MIN_CONNECTIONS,

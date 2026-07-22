@@ -80,8 +80,12 @@ DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
 - [Sprint 2](sprint-plans/sprint-2.md) — planned next: Responses API token
   streaming, tool-use timeline, safe progress visualization, and temporary
   Streamlit rendering.
-- [Sprint 3](sprint-plans/sprint-3.md) — queued after Sprint 2: Lakebase-backed
-  per-user session history and complete bounded-history replay.
+- [Sprint 3](sprint-plans/sprint-3.md) — Lakebase-backed per-user session
+  history and bounded-history replay; its closeout is superseded by the
+  required hardening work below.
+- [Sprint 3b](sprint-plans/sprint-3b.md) — active: remediate persistence,
+  identity, migration, stream-lifecycle, deployment, and verification defects
+  before React consumes the Sprint 3 service boundary.
 - [Sprint 4](sprint-plans/sprint-4.md) — queued after Sprint 3: migrate the Chat
   UI App from Streamlit to React using the official Databricks chat template as
   the baseline.

@@ -96,7 +96,7 @@ class ConversationRepository:
         Returns:
             The newly created Conversation.
         """
-        truncated_title = title[: _MAX_TITLE_LENGTH]
+        truncated_title = title[:_MAX_TITLE_LENGTH]
         conv_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
 
@@ -190,7 +190,7 @@ class ConversationRepository:
             async with conn.cursor() as cur:
                 await cur.execute(
                     "SELECT id, owner, title, created_at, updated_at, deleted_at "
-                    "FROM conversations WHERE id = %s AND owner = %s",
+                    "FROM conversations WHERE id = %s AND owner = %s AND deleted_at IS NULL",
                     (conversation_id, owner),
                 )
                 row = await cur.fetchone()
@@ -228,7 +228,7 @@ class ConversationRepository:
                     "       ci.item_type, ci.role, ci.payload, ci.item_key, ci.created_at "
                     "FROM conversation_items ci "
                     "JOIN conversations c ON c.id = ci.conversation_id "
-                    "WHERE ci.conversation_id = %s AND c.owner = %s "
+                    "WHERE ci.conversation_id = %s AND c.owner = %s AND c.deleted_at IS NULL "
                     "ORDER BY ci.sequence ASC",
                     (conversation_id, owner),
                 )
@@ -261,14 +261,14 @@ class ConversationRepository:
             ConversationNotFoundError: If the conversation does not exist or
                 is not owned by the caller.
         """
-        truncated = title[: _MAX_TITLE_LENGTH]
+        truncated = title[:_MAX_TITLE_LENGTH]
         now = datetime.now(timezone.utc)
 
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
                     "UPDATE conversations SET title = %s, updated_at = %s "
-                    "WHERE id = %s AND owner = %s "
+                    "WHERE id = %s AND owner = %s AND deleted_at IS NULL "
                     "RETURNING id, owner, title, created_at, updated_at, deleted_at",
                     (truncated, now, conversation_id, owner),
                 )
@@ -298,10 +298,7 @@ class ConversationRepository:
         conversation_id: uuid.UUID,
         owner: str,
     ) -> None:
-        """Hard-delete a conversation and all its child turns/items.
-
-        Uses ``ON DELETE CASCADE`` foreign keys so deleting the conversation
-        also removes its turns and conversation_items.
+        """Recoverably delete a conversation without removing its audit data.
 
         Raises:
             ConversationNotFoundError: If the conversation does not exist or
@@ -310,8 +307,8 @@ class ConversationRepository:
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
-                    "DELETE FROM conversations "
-                    "WHERE id = %s AND owner = %s",
+                    "UPDATE conversations SET deleted_at = now(), updated_at = now() "
+                    "WHERE id = %s AND owner = %s AND deleted_at IS NULL",
                     (conversation_id, owner),
                 )
                 updated = cur.rowcount
@@ -354,62 +351,47 @@ class ConversationRepository:
             IdempotentTurnExistsError: If a turn with the same
                 ``client_request_id`` already exists in this conversation.
         """
-        # First verify conversation ownership
-        await self.get_conversation(conversation_id, owner)
-
-        turn_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
-
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
-                try:
-                    # Allocate sequence number atomically
+                # This row lock serializes both turn and item sequence allocation
+                # for the conversation.  It also checks owner and soft deletion.
+                await cur.execute(
+                    "SELECT id FROM conversations WHERE id = %s AND owner = %s "
+                    "AND deleted_at IS NULL FOR UPDATE",
+                    (conversation_id, owner),
+                )
+                if await cur.fetchone() is None:
+                    raise ConversationNotFoundError("Conversation not found for owner")
+                await cur.execute(
+                    "SELECT COALESCE(MAX(sequence), 0) + 1 FROM turns WHERE conversation_id = %s",
+                    (conversation_id,),
+                )
+                (next_seq,) = await cur.fetchone()
+                await cur.execute(
+                    "INSERT INTO turns (id, conversation_id, client_request_id, sequence, status) "
+                    "VALUES (%s, %s, %s, %s, 'active') "
+                    "ON CONFLICT (conversation_id, client_request_id) DO NOTHING "
+                    "RETURNING id, conversation_id, client_request_id, sequence, status, "
+                    "mlflow_trace_id, created_at, completed_at",
+                    (uuid.uuid4(), conversation_id, client_request_id, next_seq),
+                )
+                row = await cur.fetchone()
+                if row is None:
                     await cur.execute(
-                        "SELECT COALESCE(MAX(sequence), 0) + 1 FROM turns "
-                        "WHERE conversation_id = %s",
-                        (conversation_id,),
+                        "SELECT id, conversation_id, client_request_id, sequence, status, "
+                        "mlflow_trace_id, created_at, completed_at FROM turns "
+                        "WHERE conversation_id = %s AND client_request_id = %s",
+                        (conversation_id, client_request_id),
                     )
-                    (next_seq,) = await cur.fetchone()
-
-                    await cur.execute(
-                        "INSERT INTO turns "
-                        "(id, conversation_id, client_request_id, sequence, "
-                        " status, created_at) "
-                        "VALUES (%s, %s, %s, %s, 'active', %s)",
-                        (turn_id, conversation_id, client_request_id, next_seq, now),
-                    )
-                except Exception as exc:
-                    # Check for unique violation on (conversation_id, client_request_id)
-                    if _is_unique_violation(exc):
-                        # Fetch the existing turn
-                        await cur.execute(
-                            "SELECT id, conversation_id, client_request_id, sequence, "
-                            "       status, mlflow_trace_id, created_at, completed_at "
-                            "FROM turns "
-                            "WHERE conversation_id = %s AND client_request_id = %s",
-                            (conversation_id, client_request_id),
-                        )
-                        row = await cur.fetchone()
-                        if row:
-                            await conn.rollback()
-                            raise IdempotentTurnExistsError(
-                                f"Turn with client_request_id '{client_request_id}' "
-                                f"already exists in conversation {conversation_id}"
-                            ) from exc
-                    raise
+                    row = await cur.fetchone()
+                await cur.execute(
+                    "UPDATE conversations SET updated_at = now() WHERE id = %s",
+                    (conversation_id,),
+                )
             await conn.commit()
-
-        # Update conversation's updated_at
-        await self._touch_conversation(conversation_id)
-
-        return Turn(
-            id=turn_id,
-            conversation_id=conversation_id,
-            client_request_id=client_request_id,
-            sequence=next_seq,
-            status="active",
-            created_at=now,
-        )
+        if row is None:
+            raise RuntimeError("Could not create or retrieve turn")
+        return _row_to_turn(row)
 
     # ------------------------------------------------------------------
     # C7: Monotonic sequence allocation (implemented inline in create_turn)
@@ -453,20 +435,73 @@ class ConversationRepository:
         Returns:
             The completed Turn.
         """
-        await self.get_conversation(conversation_id, owner)
+        if len(items) > _MAX_ITEMS_PER_TURN:
+            raise PayloadRedactedError(
+                f"A turn may contain at most {_MAX_ITEMS_PER_TURN} output items"
+            )
+        raw_persisted: list[tuple[ItemType, str | None, dict[str, Any], str]] = []
+        if user_message is not None:
+            user_payload = redact_payload(
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": user_message}],
+                }
+            )
+            if not validate_payload_size(user_payload):
+                raise PayloadTooLargeError("User message exceeds maximum size")
+            raw_persisted.append(("message", "user", user_payload, "input"))
+        for index, raw_item in enumerate(items):
+            payload = redact_payload(raw_item)
+            if not validate_payload_size(payload):
+                raise PayloadTooLargeError(f"Item {index} payload exceeds maximum size")
+            # Stable stream provenance first; index is deterministic fallback.
+            provenance = raw_item.get("id") or raw_item.get("call_id") or str(index)
+            item_key = f"{self._infer_item_type(raw_item)}:{provenance}"
+            raw_persisted.append(
+                (
+                    self._infer_item_type(raw_item),
+                    raw_item.get("role"),
+                    payload,
+                    item_key,
+                )
+            )
         now = datetime.now(timezone.utc)
 
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
-                # Verify turn belongs to conversation
+                # Lock the owned active conversation, then transition the turn.
                 await cur.execute(
-                    "SELECT id FROM turns WHERE id = %s AND conversation_id = %s",
-                    (turn_id, conversation_id),
+                    "SELECT id FROM conversations WHERE id = %s AND owner = %s "
+                    "AND deleted_at IS NULL FOR UPDATE",
+                    (conversation_id, owner),
                 )
                 if await cur.fetchone() is None:
-                    raise TurnNotFoundError(
-                        f"Turn {turn_id} not found in conversation {conversation_id}"
+                    raise ConversationNotFoundError("Conversation not found for owner")
+
+                await cur.execute(
+                    "UPDATE turns SET status = 'completed', completed_at = %s, "
+                    "mlflow_trace_id = COALESCE(%s, mlflow_trace_id) "
+                    "WHERE id = %s AND conversation_id = %s AND status = 'active' "
+                    "RETURNING id, conversation_id, client_request_id, sequence, status, "
+                    "mlflow_trace_id, created_at, completed_at",
+                    (now, mlflow_trace_id, turn_id, conversation_id),
+                )
+                turn_row = await cur.fetchone()
+                if turn_row is None:
+                    await cur.execute(
+                        "SELECT id, conversation_id, client_request_id, sequence, status, "
+                        "mlflow_trace_id, created_at, completed_at FROM turns "
+                        "WHERE id = %s AND conversation_id = %s",
+                        (turn_id, conversation_id),
                     )
+                    existing = await cur.fetchone()
+                    if existing is None:
+                        raise TurnNotFoundError(f"Turn {turn_id} not found")
+                    if existing[4] == "completed":
+                        await conn.commit()
+                        return _row_to_turn(existing)
+                    raise TurnNotFoundError(f"Turn {turn_id} is not active")
 
                 # Get the next item sequence
                 await cur.execute(
@@ -476,72 +511,31 @@ class ConversationRepository:
                 )
                 (next_item_seq,) = await cur.fetchone()
 
-                # Insert user message as the first item (if provided)
-                offset = 0
-                if user_message:
-                    payload_dict = {
-                        "type": "message",
-                        "role": "user",
-                        "content": [{"type": "input_text", "text": user_message}],
-                    }
+                for i, (item_type, role, payload, item_key) in enumerate(raw_persisted):
                     await cur.execute(
                         "INSERT INTO conversation_items "
                         "(id, conversation_id, turn_id, sequence, item_type, "
-                        " role, payload) "
-                        "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
+                        " role, payload, item_key) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s) "
+                        "ON CONFLICT (turn_id, item_key) DO NOTHING",
                         (
                             uuid.uuid4(),
                             conversation_id,
                             turn_id,
-                            next_item_seq,
-                            "message",
-                            "user",
-                            _payload_to_json(payload_dict),
-                        ),
-                    )
-                    offset = 1
-
-                # Insert each output item
-                for i, raw_item in enumerate(items):
-                    item_type = self._infer_item_type(raw_item)
-                    role = raw_item.get("role")
-                    payload = redact_payload(raw_item)
-
-                    if not validate_payload_size(payload):
-                        raise PayloadTooLargeError(
-                            f"Item {i} payload exceeds maximum size"
-                        )
-
-                    item_id = uuid.uuid4()
-                    await cur.execute(
-                        "INSERT INTO conversation_items "
-                        "(id, conversation_id, turn_id, sequence, item_type, "
-                        " role, payload) "
-                        "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb)",
-                        (
-                            item_id,
-                            conversation_id,
-                            turn_id,
-                            next_item_seq + i + offset,
+                            next_item_seq + i,
                             item_type,
                             role,
                             _payload_to_json(payload),
+                            item_key,
                         ),
                     )
-
-                # Mark turn as completed
                 await cur.execute(
-                    "UPDATE turns SET status = 'completed', completed_at = %s, "
-                    "  mlflow_trace_id = COALESCE(%s, mlflow_trace_id) "
-                    "WHERE id = %s AND conversation_id = %s",
-                    (now, mlflow_trace_id, turn_id, conversation_id),
+                    "UPDATE conversations SET updated_at = %s WHERE id = %s",
+                    (now, conversation_id),
                 )
 
             await conn.commit()
 
-        await self._touch_conversation(conversation_id)
-
-        return await self._get_turn(turn_id)
+        return _row_to_turn(turn_row)
 
     # ------------------------------------------------------------------
     # C9: Failed-turn persistence
@@ -563,15 +557,16 @@ class ConversationRepository:
             TurnNotFoundError: If the turn is not found.
             ConversationNotFoundError: If ownership check fails.
         """
-        await self.get_conversation(conversation_id, owner)
         now = datetime.now(timezone.utc)
 
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
                     "UPDATE turns SET status = 'failed', completed_at = %s "
-                    "WHERE id = %s AND conversation_id = %s AND status = 'active'",
-                    (now, turn_id, conversation_id),
+                    "WHERE id = %s AND conversation_id = %s AND status = 'active' "
+                    "AND EXISTS (SELECT 1 FROM conversations c WHERE c.id = %s "
+                    "AND c.owner = %s AND c.deleted_at IS NULL)",
+                    (now, turn_id, conversation_id, conversation_id, owner),
                 )
                 updated = cur.rowcount
             await conn.commit()
@@ -583,6 +578,27 @@ class ConversationRepository:
 
         await self._touch_conversation(conversation_id)
         return await self._get_turn(turn_id)
+
+    async def cancel_turn(
+        self, turn_id: uuid.UUID, conversation_id: uuid.UUID, owner: str
+    ) -> Turn:
+        """Atomically transition an owned active turn to ``cancelled``."""
+        now = datetime.now(timezone.utc)
+        async with self._pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "UPDATE turns SET status = 'cancelled', completed_at = %s "
+                    "WHERE id = %s AND conversation_id = %s AND status = 'active' "
+                    "AND EXISTS (SELECT 1 FROM conversations c WHERE c.id = %s "
+                    "AND c.owner = %s AND c.deleted_at IS NULL) RETURNING id, conversation_id, "
+                    "client_request_id, sequence, status, mlflow_trace_id, created_at, completed_at",
+                    (now, turn_id, conversation_id, conversation_id, owner),
+                )
+                row = await cur.fetchone()
+            await conn.commit()
+        if row is None:
+            raise TurnNotFoundError(f"Active turn {turn_id} not found for owner")
+        return _row_to_turn(row)
 
     # ------------------------------------------------------------------
     # Helper utilities
@@ -607,7 +623,7 @@ class ConversationRepository:
                     "JOIN conversations c ON c.id = ci.conversation_id "
                     "JOIN turns t ON t.id = ci.turn_id "
                     "WHERE ci.conversation_id = %s AND c.owner = %s "
-                    "  AND t.status = 'completed' "
+                    "  AND c.deleted_at IS NULL AND t.status = 'completed' "
                     "ORDER BY ci.sequence ASC",
                     (conversation_id, owner),
                 )
@@ -619,6 +635,7 @@ class ConversationRepository:
         self,
         turn_id: uuid.UUID,
         conversation_id: uuid.UUID,
+        owner: str,
         mlflow_trace_id: str,
     ) -> None:
         """Set the MLflow trace ID on a turn record without adding it to
@@ -626,10 +643,13 @@ class ConversationRepository:
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
-                    "UPDATE turns SET mlflow_trace_id = %s "
-                    "WHERE id = %s AND conversation_id = %s",
-                    (mlflow_trace_id, turn_id, conversation_id),
+                    "UPDATE turns SET mlflow_trace_id = %s WHERE id = %s "
+                    "AND conversation_id = %s AND EXISTS (SELECT 1 FROM conversations c "
+                    "WHERE c.id = %s AND c.owner = %s AND c.deleted_at IS NULL)",
+                    (mlflow_trace_id, turn_id, conversation_id, conversation_id, owner),
                 )
+                if cur.rowcount == 0:
+                    raise TurnNotFoundError(f"Turn {turn_id} not found for owner")
             await conn.commit()
 
     # ------------------------------------------------------------------
@@ -697,15 +717,32 @@ def _row_to_item(row: Sequence[Any]) -> ConversationItem:
         sequence=row[3],
         item_type=row[4],
         role=row[5],
-        payload=ItemPayload(**row[6]) if isinstance(row[6], dict) else ItemPayload(type="unknown"),
+        payload=ItemPayload(**row[6])
+        if isinstance(row[6], dict)
+        else ItemPayload(type="unknown"),
         item_key=row[7],
         created_at=row[8],
+    )
+
+
+def _row_to_turn(row: Sequence[Any]) -> Turn:
+    """Convert a canonical turn select row into its model."""
+    return Turn(
+        id=row[0],
+        conversation_id=row[1],
+        client_request_id=row[2],
+        sequence=row[3],
+        status=row[4],
+        mlflow_trace_id=row[5],
+        created_at=row[6],
+        completed_at=row[7],
     )
 
 
 def _payload_to_json(payload: dict[str, Any]) -> str:
     """Serialize a payload dict to a JSON string for PostgreSQL JSONB."""
     import json
+
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 

@@ -105,6 +105,16 @@ class TestRedactPayload:
         assert "redacted" in result
         assert result["redacted"] is True
 
+    def test_redacts_json_string_tool_arguments_without_redacting_monkey(self):
+        payload = {
+            "type": "function_call",
+            "arguments": json.dumps({"api_key": "secret", "monkey_type": "capuchin"}),
+        }
+        result = redact_payload(payload)
+        arguments = json.loads(result["arguments"])
+        assert arguments["api_key"] == "<redacted>"
+        assert arguments["monkey_type"] == "capuchin"
+
 
 class TestValidatePayloadSize:
     """S3-C10: Maximum item-size validation."""
@@ -116,6 +126,7 @@ class TestValidatePayloadSize:
     def test_large_payload_fails(self, monkeypatch):
         # Temporarily lower the limit
         import ecommerce_agent.conversation.redaction as R
+
         monkeypatch.setattr(R, "_MAX_PAYLOAD_BYTES", 10)
         payload = {"type": "message", "data": "x" * 1000}
         assert validate_payload_size(payload) is False

@@ -3,9 +3,8 @@
 The conversation module is copied into the chat_ui source directory so the
 App runtime (which only downloads chat_ui/) can import it.
 """
+
 import pathlib
-import shutil
-import tempfile
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.apps import AppDeployment
@@ -25,7 +24,11 @@ files_to_upload = []
 
 # Chat UI files (except __pycache__)
 for f in sorted(LOCAL_APP_DIR.rglob("*")):
-    if f.is_file() and f.suffix in (".py", ".yaml", ".txt") and "__pycache__" not in f.parts:
+    if (
+        f.is_file()
+        and f.suffix in (".py", ".yaml", ".txt")
+        and "__pycache__" not in f.parts
+    ):
         files_to_upload.append(("chat_ui", f, f.name))
 
 # Conversation files

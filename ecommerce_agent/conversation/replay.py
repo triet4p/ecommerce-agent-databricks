@@ -55,14 +55,6 @@ def _convert_message_item(item: ConversationItem) -> dict[str, Any] | None:
 
     combined = "\n".join(texts)
 
-    # Skip messages that are raw JSON echoes of tool results (starts with
-    # `{` or `[`).  The agent emits these as a separate response.output_item
-    # before the natural-language answer, and replaying them would break the
-    # Responses API's role-alternation requirement.
-    stripped = combined.strip()
-    if stripped.startswith("{") or stripped.startswith("["):
-        return None
-
     return {
         "role": role,
         "content": [{"type": "input_text", "text": combined}],
@@ -168,10 +160,12 @@ def append_user_message(
     Returns:
         The complete input list with the new user message appended.
     """
-    input_history.append({
-        "role": "user",
-        "content": [{"type": "input_text", "text": user_message}],
-    })
+    input_history.append(
+        {
+            "role": "user",
+            "content": [{"type": "input_text", "text": user_message}],
+        }
+    )
     return input_history
 
 
@@ -244,6 +238,7 @@ def accumulate_output_items(
     """
     output_items: list[dict[str, Any]] = []
     had_error = False
+    completed = False
 
     for event in stream_events:
         event_type = event.get("type", "")
@@ -259,9 +254,10 @@ def accumulate_output_items(
 
         # Stop collecting at response.completed
         if event_type == _RESPONSE_COMPLETED:
+            completed = True
             break
 
-    if had_error:
+    if had_error or not completed:
         return []
 
     return output_items

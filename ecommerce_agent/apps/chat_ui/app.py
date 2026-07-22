@@ -11,7 +11,6 @@ Sprint 3 adds Lakebase-backed persistence on top of the Sprint 2 rendering.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import threading
 import uuid
@@ -20,13 +19,18 @@ import requests
 import streamlit as st
 from databricks.sdk import WorkspaceClient
 
-from app_oauth import resolve_agent_app_url
+from apps.chat_ui.app_oauth import resolve_agent_app_url
 from conversation.connection import create_pool
+from conversation.identity import TrustedIdentityError, trusted_owner_from_headers
 from conversation.schema import migrate
 from conversation.service import ConversationService
-from display_policy import derive_phase_label, sanitize_output, tool_display_name
-from sse_parser import JSONEventParser
-from stream_types import (
+from apps.chat_ui.display_policy import (
+    derive_phase_label,
+    sanitize_output,
+    tool_display_name,
+)
+from apps.chat_ui.sse_parser import JSONEventParser
+from apps.chat_ui.stream_types import (
     ErrorEvent,
     OutputItemDoneEvent,
     TextDeltaEvent,
@@ -98,6 +102,17 @@ def _run_async(coro):
     return asyncio.run_coroutine_threadsafe(coro, loop).result()
 
 
+def _trusted_user() -> str:
+    """Read owner identity from Databricks-injected headers only."""
+    try:
+        return trusted_owner_from_headers(dict(st.context.headers))
+    except (AttributeError, TrustedIdentityError) as exc:
+        logger.warning("Trusted end-user identity unavailable: %s", type(exc).__name__)
+        raise TrustedIdentityError(
+            "Sign in through Databricks to use conversations"
+        ) from exc
+
+
 def _get_or_create_conv(svc: ConversationService | None, user: str) -> str | None:
     """Return the current conversation ID, creating one if needed."""
     if svc is None:
@@ -164,16 +179,23 @@ if prompt := st.chat_input("Ask about orders, policies..."):
     event_has_tool_result = False
     event_multi_step = False
     received_error = False
+    terminal_success = False
     collected_events: list[dict] = []
 
     # --- Persistence: resolve service and turn ---
     svc: ConversationService | None = st.session_state.conversation_service
-    user = "unknown@unknown"
+    try:
+        user = _trusted_user()
+    except TrustedIdentityError as exc:
+        text_placeholder.error(str(exc))
+        st.stop()
     conv_id = _get_or_create_conv(svc, user)
     turn_id = None
     if svc and conv_id:
         try:
-            turn = _run_async(svc.create_turn(uuid.UUID(conv_id), user, str(uuid.uuid4())))
+            turn = _run_async(
+                svc.create_turn(uuid.UUID(conv_id), user, str(uuid.uuid4()))
+            )
             turn_id = str(turn.id)
         except Exception as exc:
             logger.warning("Turn creation failed: %s", exc)
@@ -185,12 +207,23 @@ if prompt := st.chat_input("Ask about orders, policies..."):
             replay = _run_async(svc.build_replay(uuid.UUID(conv_id), user, prompt))
             if replay.within_budget and replay.input_items:
                 input_items = replay.input_items
-        except Exception:
-            pass
+            elif not replay.within_budget:
+                text_placeholder.error(
+                    "This conversation is too long. Start a new conversation."
+                )
+                if turn_id:
+                    _run_async(
+                        svc.cancel_turn(uuid.UUID(turn_id), uuid.UUID(conv_id), user)
+                    )
+                st.stop()
+        except Exception as exc:
+            logger.warning("Replay preparation failed: %s", type(exc).__name__)
     if input_items is None:
-        input_items = [{"role": "user", "content": [{"type": "input_text", "text": prompt}]}]
+        input_items = [
+            {"role": "user", "content": [{"type": "input_text", "text": prompt}]}
+        ]
 
-    logger.info("TURN input_items=%s", json.dumps(input_items, ensure_ascii=False)[:2000])
+    logger.info("Agent request metadata: input_items=%d", len(input_items))
 
     # Resolve agent app URL and get OAuth headers
     w = WorkspaceClient()
@@ -207,8 +240,7 @@ if prompt := st.chat_input("Ask about orders, policies..."):
             timeout=AGENT_REQUEST_TIMEOUT_SECONDS,
         )
         if resp.status_code != 200:
-            error_body = resp.text[:2000] if resp.text else "(empty)"
-            logger.warning("API %d body=%s input=%s", resp.status_code, error_body, json.dumps(input_items, ensure_ascii=False)[:2000])
+            logger.warning("Agent API returned status=%d", resp.status_code)
             resp.raise_for_status()
 
         logger.info("STREAM-01: HTTP 200, starting to read chunks...")
@@ -221,14 +253,19 @@ if prompt := st.chat_input("Ask about orders, policies..."):
                 break
             chunk_n += 1
             if chunk_n <= 3 or chunk_n % 10 == 0:
-                raw_str = raw_chunk.decode('utf-8', errors='replace') if isinstance(raw_chunk, bytes) else str(raw_chunk)
-                logger.info("STREAM-CHUNK: #%d size=%d data=%.200s", chunk_n, len(raw_chunk), raw_str.replace('\n','\\n'))
+                logger.info(
+                    "Stream chunk received: index=%d bytes=%d", chunk_n, len(raw_chunk)
+                )
             parsed_events = list(parser.feed(raw_chunk))
             if not parsed_events:
                 continue
             for parsed in parsed_events:
                 if parsed == "[DONE]":
-                    logger.info("STREAM-02: [DONE] after %d chunks, %d events total", chunk_n, len(collected_events))
+                    logger.info(
+                        "STREAM-02: [DONE] after %d chunks, %d events total",
+                        chunk_n,
+                        len(collected_events),
+                    )
                     stream_done = True
                     break
 
@@ -236,7 +273,13 @@ if prompt := st.chat_input("Ask about orders, policies..."):
                     continue
 
                 collected_events.append(parsed)
-                logger.info("STREAM-EVT: event#%d full=%s", len(collected_events)+1, json.dumps(parsed, ensure_ascii=False)[:500])
+                logger.info(
+                    "Stream event received: index=%d type=%s",
+                    len(collected_events) + 1,
+                    parsed.get("type"),
+                )
+                if parsed.get("type") == "response.completed":
+                    terminal_success = True
 
                 event = parse_stream_event(parsed)
                 if event is None:
@@ -299,7 +342,11 @@ if prompt := st.chat_input("Ask about orders, policies..."):
             is_error=received_error,
         )
         phase_placeholder.caption(phase)
-        logger.info("STREAM OK: events=%d text=%d chars", len(collected_events), len(accumulated_text))
+        logger.info(
+            "STREAM OK: events=%d text=%d chars",
+            len(collected_events),
+            len(accumulated_text),
+        )
 
     except requests.exceptions.Timeout:
         logger.warning(
@@ -313,21 +360,32 @@ if prompt := st.chat_input("Ask about orders, policies..."):
         received_error = True
 
     except requests.exceptions.RequestException as exc:
-        logger.warning("Streaming request failed: %s", exc)
-        text_placeholder.error(f"❌ Connection error: {exc}")
+        logger.warning("Streaming request failed: %s", type(exc).__name__)
+        text_placeholder.error("❌ Connection error. Please retry.")
         received_error = True
 
     # --- Persistence: record turn outcome ---
-    if svc and turn_id and conv_id and not received_error:
+    if svc and turn_id and conv_id and terminal_success and not received_error:
         try:
             _run_async(
                 svc.complete_turn(
-                    uuid.UUID(turn_id), uuid.UUID(conv_id), user,
-                    collected_events, user_message=prompt,
+                    uuid.UUID(turn_id),
+                    uuid.UUID(conv_id),
+                    user,
+                    collected_events,
+                    user_message=prompt,
                 )
             )
         except Exception as exc:
-            logger.warning("Turn persist failed: %s", exc)
+            logger.warning("Turn persist failed: %s", type(exc).__name__)
+            received_error = True
+    elif svc and turn_id and conv_id:
+        try:
+            _run_async(svc.fail_turn(uuid.UUID(turn_id), uuid.UUID(conv_id), user))
+        except Exception as exc:
+            logger.warning(
+                "Turn failure state could not be persisted: %s", type(exc).__name__
+            )
 
     # Retry button on error
     if received_error:

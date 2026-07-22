@@ -153,7 +153,9 @@ class TestConvertItemsToInputHistory:
                     "type": "message",
                     "id": "a1",
                     "role": "assistant",
-                    "content": [{"type": "output_text", "text": "Your order was delivered."}],
+                    "content": [
+                        {"type": "output_text", "text": "Your order was delivered."}
+                    ],
                 },
                 sequence=4,
                 role="assistant",
@@ -177,7 +179,9 @@ class TestAppendUserMessage:
         assert result[0]["role"] == "user"
 
     def test_append_after_history(self):
-        history = [{"role": "assistant", "content": [{"type": "input_text", "text": "Hi"}]}]
+        history = [
+            {"role": "assistant", "content": [{"type": "input_text", "text": "Hi"}]}
+        ]
         result = append_user_message(history, "How are you?")
         assert len(result) == 2
         assert result[1]["role"] == "user"
@@ -200,7 +204,9 @@ class TestRequestBudget:
 
     def test_over_budget(self):
         huge_text = "x" * 200_000
-        items = [{"role": "user", "content": [{"type": "input_text", "text": huge_text}]}]
+        items = [
+            {"role": "user", "content": [{"type": "input_text", "text": huge_text}]}
+        ]
         ok, size = check_request_budget(items, max_chars=100_000)
         assert ok is False
         assert size > 100_000
@@ -213,12 +219,22 @@ class TestAccumulateOutputItems:
         events = [
             {
                 "type": "response.output_item.done",
-                "item": {"type": "message", "id": "m1", "content": [{"type": "output_text", "text": "Hello"}]},
+                "item": {
+                    "type": "message",
+                    "id": "m1",
+                    "content": [{"type": "output_text", "text": "Hello"}],
+                },
                 "output_index": 0,
             },
             {
                 "type": "response.output_item.done",
-                "item": {"type": "function_call", "id": "fc1", "call_id": "c1", "name": "get_status", "arguments": "{}"},
+                "item": {
+                    "type": "function_call",
+                    "id": "fc1",
+                    "call_id": "c1",
+                    "name": "get_status",
+                    "arguments": "{}",
+                },
                 "output_index": 1,
             },
             {"type": "response.completed", "response": {}},
@@ -230,7 +246,10 @@ class TestAccumulateOutputItems:
 
     def test_empty_on_error(self):
         events = [
-            {"type": "response.output_item.done", "item": {"type": "message", "id": "m1"}},
+            {
+                "type": "response.output_item.done",
+                "item": {"type": "message", "id": "m1"},
+            },
             {"type": "error", "code": "ERROR", "message": "Something broke"},
         ]
         items = accumulate_output_items(events)
@@ -240,12 +259,30 @@ class TestAccumulateOutputItems:
         items = accumulate_output_items([])
         assert items == []
 
+    def test_empty_without_terminal_completion(self):
+        items = accumulate_output_items(
+            [
+                {
+                    "type": "response.output_item.done",
+                    "item": {"type": "message", "id": "m1"},
+                },
+                {"type": "done"},
+            ]
+        )
+        assert items == []
+
     def test_stops_at_completed(self):
         """Should stop collecting items after response.completed."""
         events = [
-            {"type": "response.output_item.done", "item": {"type": "message", "id": "m1"}},
+            {
+                "type": "response.output_item.done",
+                "item": {"type": "message", "id": "m1"},
+            },
             {"type": "response.completed", "response": {}},
-            {"type": "response.output_item.done", "item": {"type": "message", "id": "m2"}},
+            {
+                "type": "response.output_item.done",
+                "item": {"type": "message", "id": "m2"},
+            },
         ]
         items = accumulate_output_items(events)
         assert len(items) == 1

@@ -7,6 +7,7 @@ concurrent App instances from applying the same migration twice.
 from __future__ import annotations
 
 import logging
+import asyncio
 import uuid
 from typing import Any
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Schema version — bump when adding new migrations below
 # ---------------------------------------------------------------------------
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # ---------------------------------------------------------------------------
 # Migration definitions: ordered list of (version, description, SQL)
@@ -103,6 +104,23 @@ MIGRATIONS: list[tuple[int, str, list[str]]] = [
             """,
         ],
     ),
+    (
+        2,
+        "Harden conversation constraints and item idempotency",
+        [
+            "UPDATE conversations.conversation_items SET item_key = 'legacy:' || id::text WHERE item_key IS NULL OR item_key = ''",
+            "ALTER TABLE conversations.conversations ADD CONSTRAINT conversations_owner_length CHECK (char_length(owner) BETWEEN 1 AND 255)",
+            "ALTER TABLE conversations.turns ADD CONSTRAINT turns_sequence_positive CHECK (sequence > 0)",
+            "ALTER TABLE conversations.turns ADD CONSTRAINT turns_status_valid CHECK (status IN ('active', 'completed', 'failed', 'cancelled'))",
+            "ALTER TABLE conversations.turns ADD CONSTRAINT turns_request_id_length CHECK (char_length(client_request_id) BETWEEN 1 AND 255)",
+            "ALTER TABLE conversations.turns ADD CONSTRAINT turns_trace_id_length CHECK (mlflow_trace_id IS NULL OR char_length(mlflow_trace_id) BETWEEN 1 AND 255)",
+            "ALTER TABLE conversations.conversation_items ADD CONSTRAINT items_sequence_positive CHECK (sequence > 0)",
+            "ALTER TABLE conversations.conversation_items ADD CONSTRAINT items_type_valid CHECK (item_type IN ('message', 'function_call', 'function_call_output'))",
+            "ALTER TABLE conversations.conversation_items ADD CONSTRAINT items_role_valid CHECK (role IS NULL OR role IN ('user', 'assistant', 'tool', 'system'))",
+            "ALTER TABLE conversations.conversation_items ADD CONSTRAINT items_key_required CHECK (char_length(item_key) BETWEEN 1 AND 255)",
+            "ALTER TABLE conversations.conversation_items ADD CONSTRAINT items_turn_key_unique UNIQUE (turn_id, item_key)",
+        ],
+    ),
 ]
 
 
@@ -112,32 +130,9 @@ MIGRATIONS: list[tuple[int, str, list[str]]] = [
 
 # pg_try_advisory_lock requires a bigint (64-bit signed). UUID.int is 128-bit,
 # so we take the lower 63 bits (positive signed int64 range) to avoid overflow.
-_LOCK_ID = uuid.uuid5(uuid.NAMESPACE_DNS, "ecommerce-agent-databricks-schema-migration").int & ((1 << 63) - 1)
-
-
-async def _acquire_migration_lock(pool: AsyncConnectionPool) -> bool:
-    """Try to acquire a Postgres advisory lock for migrations.
-
-    Returns:
-        ``True`` if the lock was acquired, ``False`` if another session holds it.
-    """
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT pg_try_advisory_lock(%s::bigint)", (_LOCK_ID,))
-            row = await cur.fetchone()
-            acquired = row[0] if row else False
-            if acquired:
-                logger.info("Acquired schema migration advisory lock")
-            else:
-                logger.warning("Could not acquire migration advisory lock — another instance may be migrating")
-            return acquired
-
-
-async def _release_migration_lock(pool: AsyncConnectionPool) -> None:
-    """Release the advisory migration lock."""
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute("SELECT pg_advisory_unlock(%s::bigint)", (_LOCK_ID,))
+_LOCK_ID = uuid.uuid5(
+    uuid.NAMESPACE_DNS, "ecommerce-agent-databricks-schema-migration"
+).int & ((1 << 63) - 1)
 
 
 # ---------------------------------------------------------------------------
@@ -167,17 +162,6 @@ async def _get_current_version(pool: AsyncConnectionPool) -> int:
             return row[0] if row and row[0] else 0
 
 
-async def _record_version(pool: AsyncConnectionPool, version: int) -> None:
-    """Record that a migration version has been applied."""
-    async with pool.connection() as conn:
-        async with conn.cursor() as cur:
-            await cur.execute(
-                "INSERT INTO conversations._schema_version (version) VALUES (%s)",
-                (version,),
-            )
-        await conn.commit()
-
-
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -202,49 +186,74 @@ async def migrate(pool: AsyncConnectionPool) -> dict[str, Any]:
         - ``skipped_due_to_lock``: bool
     """
     applied: list[int] = []
-    acquired = await _acquire_migration_lock(pool)
-    if not acquired:
-        current = await _get_current_version(pool)
-        return {
-            "success": True,
-            "applied": applied,
-            "current_version": current,
-            "skipped_due_to_lock": True,
-        }
-
-    try:
-        current_version = await _get_current_version(pool)
-        pending = [m for m in MIGRATIONS if m[0] > current_version]
-
-        if not pending:
-            logger.info("Schema is up-to-date at version %s", current_version)
+    # Advisory locks are session-level.  Keep lock, DDL, version record, and
+    # unlock on this exact connection, and wait for a concurrent migrator.
+    async with pool.connection() as conn:
+        acquired = False
+        for _ in range(30):
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT pg_try_advisory_lock(%s::bigint)", (_LOCK_ID,)
+                )
+                row = await cur.fetchone()
+            if row and row[0]:
+                acquired = True
+                break
+            await asyncio.sleep(1)
+        if not acquired:
+            current = await _get_current_version(pool)
             return {
-                "success": True,
+                "success": current >= SCHEMA_VERSION,
+                "applied": applied,
+                "current_version": current,
+                "skipped_due_to_lock": True,
+            }
+        try:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT to_regclass('conversations._schema_version')")
+                exists = (await cur.fetchone())[0] is not None
+                if exists:
+                    await cur.execute(
+                        "SELECT COALESCE(MAX(version), 0) FROM conversations._schema_version"
+                    )
+                    current_version = (await cur.fetchone())[0]
+                else:
+                    current_version = 0
+            pending = [m for m in MIGRATIONS if m[0] > current_version]
+
+            if not pending:
+                logger.info("Schema is up-to-date at version %s", current_version)
+                return {
+                    "success": True,
+                    "applied": applied,
+                    "current_version": current_version,
+                    "skipped_due_to_lock": False,
+                }
+
+            for version, description, statements in pending:
+                logger.info("Applying migration v%s: %s", version, description)
+                async with conn.cursor() as cur:
+                    for sql in statements:
+                        await cur.execute(sql)
+                    await cur.execute(
+                        "INSERT INTO conversations._schema_version (version) VALUES (%s)",
+                        (version,),
+                    )
+                await conn.commit()
+                applied.append(version)
+                current_version = version
+            return {
+                "success": current_version >= SCHEMA_VERSION,
                 "applied": applied,
                 "current_version": current_version,
                 "skipped_due_to_lock": False,
             }
-
-        for version, description, statements in pending:
-            logger.info("Applying migration v%s: %s", version, description)
-            async with pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    for sql in statements:
-                        await cur.execute(sql)
-                await conn.commit()
-            await _record_version(pool, version)
-            applied.append(version)
-            logger.info("Applied migration v%s", version)
-
-        current_version = await _get_current_version(pool)
-        return {
-            "success": True,
-            "applied": applied,
-            "current_version": current_version,
-            "skipped_due_to_lock": False,
-        }
-    finally:
-        await _release_migration_lock(pool)
+        except Exception:
+            await conn.rollback()
+            raise
+        finally:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT pg_advisory_unlock(%s::bigint)", (_LOCK_ID,))
 
 
 # ---------------------------------------------------------------------------
