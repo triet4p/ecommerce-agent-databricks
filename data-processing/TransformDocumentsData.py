@@ -423,6 +423,7 @@ new_served_model = ServedModelInput(
     model_name=MODEL_NAME,
     model_version=NEW_MODEL_VERSION,
     workload_size="Small",
+    # This workspace requires scale-to-zero for custom serving endpoints.
     scale_to_zero_enabled=True,
 )
 

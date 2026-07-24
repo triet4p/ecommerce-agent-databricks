@@ -120,12 +120,24 @@ def convert_items_to_input_history(
         A list of input dicts suitable for the Responses API ``input`` field.
     """
     input_history: list[dict[str, Any]] = []
+    tool_turn_ids = {
+        item.turn_id
+        for item in items
+        if item.item_type in {"function_call", "function_call_output"}
+    }
 
     for item in items:
         converted: dict[str, Any] | None = None
 
         if item.item_type == "message":
             converted = _convert_message_item(item)
+            if (
+                converted is not None
+                and item.turn_id in tool_turn_ids
+                and converted.get("role") == "assistant"
+                and _is_json_only_message(converted)
+            ):
+                converted = None
         # Skip function_call and function_call_output items — the
         # ResponsesAgent may reject replayed tool results because it
         # cannot find the corresponding pending function call.  The
@@ -140,6 +152,23 @@ def convert_items_to_input_history(
             input_history.append(converted)
 
     return input_history
+
+
+def _is_json_only_message(message: dict[str, Any]) -> bool:
+    """Identify legacy assistant echoes of a governed tool result."""
+    content = message.get("content")
+    if not isinstance(content, list):
+        return False
+    text = "".join(
+        str(block.get("text", "")) for block in content if isinstance(block, dict)
+    ).strip()
+    if not text.startswith(("{", "[")):
+        return False
+    try:
+        json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return True
 
 
 # ---------------------------------------------------------------------------

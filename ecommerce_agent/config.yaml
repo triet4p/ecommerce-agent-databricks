@@ -65,10 +65,11 @@ retriever:
   endpoint_name: search-and-rerank-endpoint
   over_fetch_k: 20
   top_k: 5
-  # One bounded retry absorbs scale-to-zero cold starts without hiding a
-  # persistent serving failure from the caller.
-  timeout_seconds: 60
-  cold_start_retry_attempts: 1
+  # The Databricks Apps proxy caps requests at 120s. Keep the production
+  # retriever warm and fail one retrieval attempt within 45s so the model/tool
+  # loop still has time to complete and emit a terminal event.
+  timeout_seconds: 45
+  cold_start_retry_attempts: 0
 
 # Rules — luôn nạp vào system prompt lúc build agent.
 rules:

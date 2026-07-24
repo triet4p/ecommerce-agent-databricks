@@ -1,5 +1,5 @@
-"""UI-neutral conversation service that the Streamlit and Sprint 4 React
-clients can both use.
+"""UI-neutral conversation service shared by the React Chat UI and other
+trusted application consumers.
 
 This is the public-facing API for conversation management. It wraps the
 repository and replay logic into a single interface.
@@ -71,7 +71,7 @@ class StreamCommitResult:
 class ConversationService:
     """High-level conversation service for UI clients.
 
-    Provides both sync-style (Streamlit-compatible) and async interfaces.
+    Provides both sync-style and async interfaces.
 
     Usage:
         service = ConversationService(pool)

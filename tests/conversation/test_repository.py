@@ -14,6 +14,7 @@ import pytest
 from ecommerce_agent.conversation.repository import (
     ConversationNotFoundError,
     ConversationRepository,
+    PayloadRedactedError,
 )
 
 
@@ -74,6 +75,16 @@ _NOW = datetime.now(timezone.utc)
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
+
+async def test_complete_turn_rejects_more_than_100_output_items(repo):
+    with pytest.raises(PayloadRedactedError, match="at most 100"):
+        await repo.complete_turn(
+            uuid.uuid4(),
+            uuid.uuid4(),
+            "owner@example.com",
+            [{"type": "message", "id": str(index)} for index in range(101)],
+        )
 
 
 class TestCreateConversation:
@@ -242,6 +253,36 @@ class TestFailTurn:
 
         turn = await repo.fail_turn(uuid.uuid4(), uuid.uuid4(), "user@test.com")
         assert turn.status == "failed"
+
+    async def test_fail_turn_is_idempotent_for_owned_failed_turn(self, repo, mock_pool):
+        update_cursor = _fake_cursor(fetch_result=None, rowcount=0)
+        conn = MagicMock()
+        _make_connection(mock_pool, conn, update_cursor)
+        existing = MagicMock(status="failed")
+        repo._get_owned_turn = AsyncMock(return_value=existing)
+
+        assert (
+            await repo.fail_turn(uuid.uuid4(), uuid.uuid4(), "user@test.com")
+            is existing
+        )
+
+
+class TestCancelTurn:
+    """S3B-05: Cancel is idempotent for the same owned terminal state."""
+
+    async def test_cancel_turn_is_idempotent_for_owned_cancelled_turn(
+        self, repo, mock_pool
+    ):
+        update_cursor = _fake_cursor(fetch_result=None)
+        conn = MagicMock()
+        _make_connection(mock_pool, conn, update_cursor)
+        existing = MagicMock(status="cancelled")
+        repo._get_owned_turn = AsyncMock(return_value=existing)
+
+        assert (
+            await repo.cancel_turn(uuid.uuid4(), uuid.uuid4(), "user@test.com")
+            is existing
+        )
 
 
 class TestGetReplayItems:

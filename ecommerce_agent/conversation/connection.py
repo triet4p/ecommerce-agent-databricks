@@ -21,14 +21,6 @@ from psycopg_pool import AsyncConnectionPool
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Lakebase endpoint — known from the provisioned project
-# ---------------------------------------------------------------------------
-
-_DEFAULT_LAKEBASE_ENDPOINT = (
-    "projects/ecommerce-agent-conversations/branches/production/endpoints/primary"
-)
-
-# ---------------------------------------------------------------------------
 # Pool configuration
 # ---------------------------------------------------------------------------
 
@@ -92,7 +84,12 @@ async def _generate_token() -> str:
     Runs the synchronous SDK call in a thread executor so it doesn't block
     the async event loop on the background thread.
     """
-    endpoint = os.environ.get("LAKEBASE_ENDPOINT", _DEFAULT_LAKEBASE_ENDPOINT)
+    endpoint = os.environ.get("LAKEBASE_ENDPOINT")
+    if not endpoint:
+        raise LakebaseConnectionError(
+            "Missing LAKEBASE_ENDPOINT. Bind a postgres resource or set the "
+            "endpoint explicitly for local development."
+        )
     logger.info("Generating Lakebase OAuth database credential")
     loop = asyncio.get_running_loop()
     ws = _get_ws()

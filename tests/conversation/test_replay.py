@@ -151,13 +151,26 @@ class TestConvertItemsToInputHistory:
                 "message",
                 {
                     "type": "message",
+                    "id": "tool-echo",
+                    "role": "assistant",
+                    "content": [
+                        {"type": "output_text", "text": '{"status": "delivered"}'}
+                    ],
+                },
+                sequence=4,
+                role="assistant",
+            ),
+            _make_item(
+                "message",
+                {
+                    "type": "message",
                     "id": "a1",
                     "role": "assistant",
                     "content": [
                         {"type": "output_text", "text": "Your order was delivered."}
                     ],
                 },
-                sequence=4,
+                sequence=5,
                 role="assistant",
             ),
         ]

@@ -6,6 +6,7 @@ import pytest
 
 from ecommerce_agent.conversation.connection import (
     LakebaseConnectionError,
+    _generate_token,
     _get_connection_params,
 )
 
@@ -57,3 +58,12 @@ class TestConnectionParams:
         monkeypatch.setenv("PGUSER", "user")
         with pytest.raises(LakebaseConnectionError):
             _get_connection_params()
+
+
+@pytest.mark.asyncio
+async def test_database_credential_requires_bound_endpoint(monkeypatch):
+    """Deployment-specific Lakebase endpoint names must never be a code fallback."""
+    monkeypatch.delenv("LAKEBASE_ENDPOINT", raising=False)
+
+    with pytest.raises(LakebaseConnectionError, match="LAKEBASE_ENDPOINT"):
+        await _generate_token()

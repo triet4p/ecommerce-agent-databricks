@@ -18,7 +18,7 @@ import logging
 import json
 import asyncio
 import concurrent.futures
-from typing import Any, Generator
+from typing import Any, Generator, Iterable
 from uuid import uuid4
 
 from databricks_langchain import ChatDatabricks
@@ -202,7 +202,7 @@ class _TextAggregator:
 
 
 def _message_chunk_to_delta_events(
-    chunk: AIMessageChunk,
+    chunk: Any,
     metadata: dict[str, Any],  # noqa: ARG001  — kept for future extensibility
     aggregator: _TextAggregator | None = None,
 ) -> Generator[ResponsesAgentStreamEvent, None, None]:
@@ -220,6 +220,12 @@ def _message_chunk_to_delta_events(
         ResponsesAgentStreamEvent,
         create_text_delta,
     )
+
+    # LangGraph's ``messages`` stream includes ToolMessageChunk instances as
+    # well as assistant chunks. Tool result JSON belongs in a
+    # function_call_output item/provenance card, never in visible answer text.
+    if not isinstance(chunk, AIMessageChunk):
+        return
 
     content = getattr(chunk, "content", None)
     if not content:
@@ -416,6 +422,22 @@ class CoreAgent(ResponsesAgent):
         # Optional/read-only tool requests must preserve real-time SSE output.
         buffer_until_verified = bool(operation_gate.report_unsatisfied())
         buffered_events: list[ResponsesAgentStreamEvent] = []
+        completed_output_items: list[dict[str, Any]] = []
+
+        def emit(
+            events: Iterable[ResponsesAgentStreamEvent],
+        ) -> Generator[ResponsesAgentStreamEvent, None, None]:
+            """Record terminal output items while preserving stream order."""
+            for event in events:
+                item = getattr(event, "item", None)
+                if getattr(
+                    event, "type", None
+                ) == "response.output_item.done" and isinstance(item, dict):
+                    completed_output_items.append(item)
+                if buffer_until_verified:
+                    buffered_events.append(event)
+                else:
+                    yield event
 
         # Sprint 2: dual stream-mode — "messages" for token-level text deltas,
         # "updates" for node-level completed items (tool calls, results).
@@ -437,15 +459,13 @@ class CoreAgent(ResponsesAgent):
                 if mode == "messages":
                     # Token-level chunks from the streaming LLM.
                     msg_chunk, metadata = data
-                    for event in _message_chunk_to_delta_events(
-                        msg_chunk,
-                        metadata,
-                        aggregator=text_aggregator,
-                    ):
-                        if buffer_until_verified:
-                            buffered_events.append(event)
-                        else:
-                            yield event
+                    yield from emit(
+                        _message_chunk_to_delta_events(
+                            msg_chunk,
+                            metadata,
+                            aggregator=text_aggregator,
+                        )
+                    )
 
                 elif mode == "updates":
                     # Node-level completed items.
@@ -465,10 +485,7 @@ class CoreAgent(ResponsesAgent):
                         deduped = _deduplicate_stream_events(
                             stream_events, text_aggregator
                         )
-                        if buffer_until_verified:
-                            buffered_events.extend(deduped)
-                        else:
-                            yield from deduped
+                        yield from emit(deduped)
 
         except Exception as exc:
             # S2-B9: Catch upstream errors and yield an error event instead of
@@ -489,17 +506,24 @@ class CoreAgent(ResponsesAgent):
         # error. The client receives the error and must not see a completion.
         if not _error_emitted:
             # Emit aggregated text-output done events for streamed content.
-            for event in text_aggregator.flush_done_events():
-                if buffer_until_verified:
-                    buffered_events.append(event)
-                else:
-                    yield event
+            yield from emit(text_aggregator.flush_done_events())
 
             # Verify required tools after streaming completes.
             self._verify_required_operations(gate=operation_gate)
 
         if buffer_until_verified:
             yield from buffered_events
+
+        if not _error_emitted:
+            yield ResponsesAgentStreamEvent(
+                type="response.completed",
+                custom_outputs=getattr(request, "custom_inputs", None),
+                response={
+                    "id": str(uuid4()),
+                    "status": "completed",
+                    "output": completed_output_items,
+                },
+            )
 
     def _run_required_workflow(
         self,

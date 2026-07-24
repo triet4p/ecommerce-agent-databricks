@@ -32,7 +32,7 @@ from .redaction import (
 # ---------------------------------------------------------------------------
 
 _MAX_TITLE_LENGTH = 500
-_MAX_ITEMS_PER_TURN = 200
+_MAX_ITEMS_PER_TURN = 100
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -572,6 +572,9 @@ class ConversationRepository:
             await conn.commit()
 
         if updated == 0:
+            existing = await self._get_owned_turn(turn_id, conversation_id, owner)
+            if existing is not None and existing.status == "failed":
+                return existing
             raise TurnNotFoundError(
                 f"Active turn {turn_id} not found in conversation {conversation_id}"
             )
@@ -597,12 +600,32 @@ class ConversationRepository:
                 row = await cur.fetchone()
             await conn.commit()
         if row is None:
+            existing = await self._get_owned_turn(turn_id, conversation_id, owner)
+            if existing is not None and existing.status == "cancelled":
+                return existing
             raise TurnNotFoundError(f"Active turn {turn_id} not found for owner")
         return _row_to_turn(row)
 
     # ------------------------------------------------------------------
     # Helper utilities
     # ------------------------------------------------------------------
+
+    async def _get_owned_turn(
+        self, turn_id: uuid.UUID, conversation_id: uuid.UUID, owner: str
+    ) -> Turn | None:
+        """Load a terminal turn only when it remains owned and not deleted."""
+        async with self._pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT t.id, t.conversation_id, t.client_request_id, t.sequence, "
+                    "t.status, t.mlflow_trace_id, t.created_at, t.completed_at "
+                    "FROM turns t JOIN conversations c ON c.id = t.conversation_id "
+                    "WHERE t.id = %s AND t.conversation_id = %s AND c.owner = %s "
+                    "AND c.deleted_at IS NULL",
+                    (turn_id, conversation_id, owner),
+                )
+                row = await cur.fetchone()
+        return _row_to_turn(row) if row is not None else None
 
     async def get_replay_items(
         self,

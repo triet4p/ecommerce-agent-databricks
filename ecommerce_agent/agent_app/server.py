@@ -23,6 +23,7 @@ from mlflow.genai.agent_server.server import AgentServer, invoke, stream
 
 from agent_core import Retriever, ToolRegistry, build_agent, load_config
 from ecommerce_agent.agent_app.handlers import invoke_agent, stream_agent
+from ecommerce_agent.agent_app.retriever_warmup import RetrieverWarmup
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +36,16 @@ _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
 _config = load_config(_CONFIG_PATH)
 
 _registry = ToolRegistry()
+_retriever_warmup: RetrieverWarmup | None = None
 
 if _config.retriever is not None:
     _retriever = Retriever(_config.retriever)
+    _retriever_warmup = RetrieverWarmup(
+        _retriever.search,
+        interval_seconds=float(
+            os.environ.get("RETRIEVER_WARM_INTERVAL_SECONDS", "900")
+        ),
+    )
     from ecommerce_agent.tools.search_policy_docs_tool import (
         make_search_policy_docs_tool,
     )
@@ -72,6 +80,18 @@ def agent_stream(request: dict):
 
 agent_server = AgentServer(agent_type="ResponsesAgent")
 app = agent_server.app
+
+if _retriever_warmup is not None:
+    # FastAPI 0.128 no longer exposes ``app.add_event_handler``; AgentServer's
+    # router still owns the startup/shutdown handler lists used by its lifespan.
+    app.router.on_startup.append(_retriever_warmup.start)
+    app.router.on_shutdown.append(_retriever_warmup.stop)
+
+
+@app.get("/api/health")
+async def app_api_health() -> dict[str, bool]:
+    """Report that the AgentServer process is ready to accept API requests."""
+    return {"healthy": True}
 
 
 @app.post("/api/responses")

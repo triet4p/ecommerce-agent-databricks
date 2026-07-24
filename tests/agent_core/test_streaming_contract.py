@@ -319,33 +319,45 @@ def test_error_event_prevents_successful_completion(monkeypatch):
 
     class ErrorGraph:
         def stream(self, _inputs, **_kwargs):
-            yield (
-                "updates",
-                {
-                    "agent": {
-                        "messages": [
-                            AIMessage(content="", id="msg_err_1", tool_calls=[])
-                        ]
-                    }
-                },
-            )
+            raise RuntimeError("upstream stream failed")
+            yield  # pragma: no cover
 
     core.graph = ErrorGraph()
-
-    # Inject a side channel that raises an error — simulate via
-    # the error envelope that MLflow's ResponsesAgentStreamEvent supports
 
     events = list(core.predict_stream(SimpleNamespace(input=[])))
     for e in events:
         consumed_types.append(e.type)
 
-    # Without error injection, the stream completes normally
-    done_count = sum(
-        1
-        for e in events
-        if e.type == "response.output_item.done" and getattr(e, "item", {}) is not None
+    assert "error" in consumed_types
+    assert "response.completed" not in consumed_types
+
+
+def test_successful_stream_ends_with_completion_event(monkeypatch):
+    core = _dummy_agent()
+    monkeypatch.setattr(
+        "agent_core.orchestrator.to_chat_completions_input", lambda _: []
     )
-    assert done_count >= 0
+
+    class SuccessGraph:
+        def stream(self, _inputs, **_kwargs):
+            yield (
+                "updates",
+                {
+                    "agent": {
+                        "messages": [
+                            AIMessage(content="OK", id="msg_ok_1", tool_calls=[])
+                        ]
+                    }
+                },
+            )
+
+    core.graph = SuccessGraph()
+    events = list(core.predict_stream(SimpleNamespace(input=[])))
+
+    assert events[-1].type == "response.completed"
+    assert events[-1].response["status"] == "completed"
+    assert events[-1].response["output"]
+    assert events[-1].response["output"][0]["type"] == "message"
 
 
 # =========================================================================
@@ -430,6 +442,21 @@ def test_tool_call_chunks_are_not_emitted_as_deltas():
     events = list(_message_chunk_to_delta_events(chunk, {"langgraph_node": "agent"}))
     # Tool call chunks should not produce text deltas
     assert len(events) == 0
+
+
+def test_tool_result_chunks_are_not_emitted_as_visible_text():
+    """Tool output JSON belongs in provenance, not the assistant answer."""
+    from langchain_core.messages import ToolMessageChunk
+
+    from agent_core.orchestrator import _message_chunk_to_delta_events
+
+    chunk = ToolMessageChunk(
+        content='{"status":"delivered"}',
+        tool_call_id="call_1",
+    )
+    events = list(_message_chunk_to_delta_events(chunk, {"langgraph_node": "tools"}))
+
+    assert events == []
 
 
 # =========================================================================
