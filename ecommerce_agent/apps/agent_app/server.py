@@ -22,8 +22,8 @@ from fastapi import Request
 from mlflow.genai.agent_server.server import AgentServer, invoke, stream
 
 from agent_core import Retriever, ToolRegistry, build_agent, load_config
-from ecommerce_agent.agent_app.handlers import invoke_agent, stream_agent
-from ecommerce_agent.agent_app.retriever_warmup import RetrieverWarmup
+from ecommerce_agent.apps.agent_app.handlers import invoke_agent, stream_agent
+from ecommerce_agent.apps.agent_app.retriever_warmup import RetrieverWarmup
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # to this source file so that the App works regardless of the working directory.
 # ---------------------------------------------------------------------------
 
-_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.yaml")
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config.yaml")
 _config = load_config(_CONFIG_PATH)
 
 _registry = ToolRegistry()
