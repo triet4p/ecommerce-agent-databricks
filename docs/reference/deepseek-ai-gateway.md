@@ -1,4 +1,4 @@
-# DeepSeek custom endpoint: AI Gateway capability matrix
+# DeepSeek Custom Endpoint and AI Gateway Matrix
 
 Endpoint: `deepseek-v4-streaming-agent-lab` (custom MLflow model, singleton).
 Reviewed 2026-07-20 against Databricks AI Gateway documentation.

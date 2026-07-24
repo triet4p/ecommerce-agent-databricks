@@ -130,3 +130,19 @@ A chronological log of *why* key choices were made in this project.
 **Alternatives considered:** Create a fourth independent Streamlit App, merge the MCP facade into the Agent App to free a slot, remove Streamlit permanently, or run React and Streamlit concurrently.
 **Reason:** Databricks Free Edition supports up to three Apps per account and the project already uses all three for Agent, Chat UI, and MCP facade. A fourth App is unavailable, while merging services changes runtime topology and violates Sprint 5's path-only refactor constraint. Restoring Streamlit satisfies the requested demo fallback only if it is certified against the current trusted identity, Lakebase schema, and streaming contract.
 **Consequences:** React and Streamlit cannot run concurrently on Free Edition. The switch workflow must record the React snapshot, reuse the same resource and bindings, verify owner-scoped history and streaming in Streamlit, restore React, and verify data continuity. Streamlit is a demo source rather than the production rollback artifact; a paid workspace may reconsider a separate App in a future architecture sprint.
+
+## [2026-07-24] Classify living documentation by purpose
+
+**Decision:** Keep only `README.md` and `PLAN.md` at the `docs/` root and place
+living documents under `architecture/`, `contracts/`, `operations/`,
+`certification/`, `policies/`, `reference/`, or `sprint-plans/` according to
+their purpose.
+**Alternatives considered:** Keep sprint-era files mixed at the `docs/` root,
+organize everything only by sprint number, or leave redirect stubs at old paths.
+**Reason:** Operators, implementers, and reviewers need different entry points;
+the previous flat layout mixed current runbooks and contracts with historical
+baselines, making deployment guidance and architecture ownership ambiguous.
+**Consequences:** New procedures go under `operations/`, stable guarantees under
+`contracts/`, living topology under `architecture/`, and historical snapshots
+under `reference/`. File moves must update maintained links and code comments;
+`artifacts/` remains immutable historical evidence rather than navigation.

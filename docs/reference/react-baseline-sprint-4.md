@@ -1,4 +1,4 @@
-# Sprint 4 — Baseline and Migration Contract
+# React Migration Baseline — Sprint 4
 
 ## S4-A1: Pinned Template Revision
 
@@ -130,7 +130,7 @@ All are prefixed with `/api/` and return JSON unless otherwise specified.
 The SSE stream uses the **identical** Sprint 2 event contract. Every event
 is a `data:` line with JSON, terminated by `data: [DONE]`.
 
-See [docs/chat-ui-event-contract.md](./chat-ui-event-contract.md) for the full
+See the [Chat UI event contract](../contracts/chat-ui-event-contract.md) for the full
 event type definitions: `response.output_text.delta`, `response.output_item.done`,
 `error`, `response.completed`.
 

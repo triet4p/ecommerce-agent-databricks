@@ -1,5 +1,7 @@
 # Chat UI App Event Contract
 
+> Canonical wire and display contract shared by React and Streamlit clients.
+
 ## Status
 
 **Frozen as of Sprint 2.** Any change to public event semantics after this

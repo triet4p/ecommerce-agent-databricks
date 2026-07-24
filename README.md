@@ -1,111 +1,143 @@
 # E-commerce Agent on Databricks
 
-An e-commerce support agent hosted on Databricks Apps. It uses LangChain 1.x,
-MLflow `ResponsesAgent`/`AgentServer`, `ChatDatabricks`, governed Unity Catalog
-functions, local deterministic tools, and a custom reranking endpoint.
+A production-style e-commerce support agent running on Databricks Apps. The
+system combines a React chat UI, Lakebase conversation persistence, an MLflow
+`ResponsesAgent`, governed Unity Catalog tools, custom retrieval/reranking, and
+an optional MCP facade.
 
-## Architecture and resource limits
+## Runtime topology
 
-The production agent is a Databricks App, not a Model Serving agent. The
-workspace quota allows exactly two project-owned Model Serving endpoints:
+| Databricks App | Responsibility | Deployment artifact |
+|---|---|---|
+| `ecommerce-agent-app` | MLflow `AgentServer`, LangChain agent loop, governed tools | `.build/apps/agent_app` |
+| `ecommerce-agent-chat-ui` | React UI and Lakebase persistence; switchable Streamlit demo | `.build/apps/chat_ui` or `.build/apps/streamlit_chat_ui` |
+| `ecommerce-agent-mcp-facade` | Optional Streamable HTTP MCP integration | `.build/apps/mcp_facade` |
 
-| Endpoint | Purpose |
-|---|---|
-| `search-and-rerank-endpoint` | policy retrieval and custom reranking |
-| `deepseek-v4-streaming-agent-lab` | isolated DeepSeek provider boundary |
+The Agent calls two existing Model Serving endpoints:
 
-Do not create temporary, per-environment, blue-green, or Agent Serving
-endpoints. The DeepSeek endpoint is updated in place only after it is
-`NOT_UPDATING`; the reranker is replaced only after a quality comparison.
+- `deepseek-v4-streaming-agent-lab` for model inference;
+- `search-and-rerank-endpoint` for policy retrieval and reranking.
 
-Unity Catalog production resources use catalog `ecommerce_agent`, with
-`agent_layer` functions and `gold_layer.order_summary`.
+Unity Catalog production resources use catalog `ecommerce_agent`. Conversation
+state is stored in the Lakebase project `ecommerce-agent-conversations`.
 
-## Local development
+## Repository layout
+
+```text
+agent_core/                         reusable, use-case-independent agent core
+ecommerce_agent/
+  apps/
+    agent_app/                      Agent App entry point and manifest
+    chat_ui/                        React/Node monorepo and manifest
+    mcp_facade/                     optional MCP facade and manifest
+    streamlit_chat_ui/              switchable demo UI and manifest
+  conversation/                     canonical persistence/service layer
+  rules/                            always-loaded behavior
+  skills/                           progressive-disclosure procedures
+  tools/                            local and Databricks-backed tools
+scripts/build_apps.py               builds isolated deployment source roots
+data-processing/                    ingestion and transformation notebooks
+tests/                              Python and deployment contract tests
+docs/                               architecture, contracts, operations, plans
+```
+
+Application source stays under `ecommerce_agent/apps/`. Databricks deployment
+never points directly at those directories: `scripts/build_apps.py` produces
+self-contained, flattened source roots under `.build/apps/`.
+
+## Prerequisites
+
+- Python 3.13 and [`uv`](https://docs.astral.sh/uv/)
+- Node.js 18+ and npm 8+
+- Databricks CLI 0.294+ with an OAuth-authenticated profile
+- Access to the project-scoped Databricks resources declared in
+  [`databricks.yml`](databricks.yml)
+
+Never commit `.env`, Databricks tokens, OAuth tokens, customer data, or generated
+credentials.
+
+## Local setup and verification
 
 ```powershell
 uv sync --all-groups
-uv run python -m compileall agent_core ecommerce_agent data-processing
-uv run pytest -v
+uv run pytest -q
+uv run python -m compileall agent_core ecommerce_agent data-processing scripts
 uvx ruff check .
 uvx ruff format --check .
 ```
 
-Credentialed checks are gated. Load `DATABRICKS_HOST` and `DATABRICKS_TOKEN`
-from `.env` into the current process only; never print or commit either value.
+React/Node checks:
 
 ```powershell
-$env:RUN_DATABRICKS_TESTS = '1'
-uv run pytest tests/integration -m databricks -v
+Set-Location ecommerce_agent/apps/chat_ui
+npm ci
+npm run build
+npm run typecheck
+npm run lint
+npm test
+Set-Location ../../..
 ```
 
-The local `mlflow.db` file is test output and is ignored by Git.
+Credentialed integration tests are explicitly gated. Load credentials into the
+current process only and follow the relevant test module; never print them.
 
-The DeepSeek singleton contract can be exercised without creating an endpoint:
+## Build deployment artifacts
+
+Run this before every bundle validation or deployment:
 
 ```powershell
-$env:RUN_DATABRICKS_TESTS = '1'
-uv run pytest tests/integration/test_deepseek_chatdatabricks_contract.py -v
+uv run python scripts/build_apps.py
 ```
 
-## Deploy the agent App
+Expected output:
 
-The root [databricks.yml](databricks.yml) defines one singleton App,
-`ecommerce-agent-app`, its MLflow experiment, `CAN_QUERY` endpoint resources,
-and `EXECUTE` grants for the governed functions. It never defines a Model
-Serving endpoint resource.
+```text
+.build/apps/
+  agent_app/
+  chat_ui/
+  mcp_facade/
+  streamlit_chat_ui/
+```
+
+The Agent artifact uses the packaged `pyproject.toml` and `uv.lock` with
+`uv run --frozen`. Do not add a root `requirements.txt` to that artifact.
+
+## Redeploy
+
+Choose the Databricks profile explicitly. The examples use the project profile
+`Ecommerce-Agent`:
 
 ```powershell
-databricks bundle validate -t dev
-databricks bundle validate -t prod
-databricks bundle plan -t dev
-databricks bundle deploy -t dev
-databricks bundle run ecommerce_agent -t dev
+databricks auth profiles
+databricks current-user me --profile Ecommerce-Agent
+
+uv run python scripts/build_apps.py
+databricks bundle validate --strict -t dev --profile Ecommerce-Agent
+databricks bundle deploy -t dev --profile Ecommerce-Agent
+
+databricks bundle run ecommerce_agent -t dev --profile Ecommerce-Agent
+databricks bundle run ecommerce_agent_chat_ui -t dev --profile Ecommerce-Agent
 ```
 
-Databricks Apps uses the root `pyproject.toml` plus `uv.lock`; do not add a root
-`requirements.txt`, because it would override the locked `uv` install.
-
-The App's externally authenticated Responses API is
-`POST /api/responses`. The native MLflow `/responses` route remains available
-inside the server, but an App-to-App or local API request needs an OAuth token
-audience-scoped for `ecommerce-agent-app`; a workspace PAT is deliberately not
-accepted by App ingress. Supply that token only in the process environment as
-`DATABRICKS_AGENT_APP_OAUTH_TOKEN` to run the gated smoke test:
+Then verify:
 
 ```powershell
-$env:RUN_DATABRICKS_TESTS = '1'
-uv run pytest tests/integration/test_agent_app_api_contract.py -v
+databricks apps get ecommerce-agent-app --profile Ecommerce-Agent -o json
+databricks apps get ecommerce-agent-chat-ui --profile Ecommerce-Agent -o json
+databricks apps logs ecommerce-agent-chat-ui --profile Ecommerce-Agent
 ```
 
-## DeepSeek boundary
+The default Chat UI source is React. For the complete deployment, Streamlit
+switch, smoke-test, restoration, and troubleshooting procedures, use the
+[redeployment runbook](docs/operations/redeploy.md).
 
-`deepseek_adapter/` is the only provider-specific package. It is deployed as a
-custom Model Serving model and must never be imported by `agent_core` or the
-Databricks App. It preserves reasoning through tool-result continuations and
-rejects `tool_choice` in DeepSeek thinking mode. See
-[the deployment module](deepseek_adapter/deployment.py),
-[benchmark evidence](artifacts/k8_deepseek_benchmark_2026-07-20.md), and the
-[AI Gateway matrix](docs/deepseek-ai-gateway-matrix.md).
+## Documentation
 
-## Verification status and known prerequisites
+Start at the [documentation index](docs/README.md).
 
-- Bundle dev/prod validation, Agent App startup, and Chat UI startup have been
-  verified. Both use the documented `/api/responses` OAuth route.
-- UC function contracts and the reranker have credentialed coverage.
-- Managed MCP discovery and an unknown-ID UC-function invocation have been
-  verified through the current per-function route. The code deliberately never
-  falls back to `UCFunctionToolkit`; auth/grant failures stay visible.
-- AI Gateway QPM/inference-table controls are not active on the current custom
-  endpoint: the workspace rejects QPM-only configuration for this endpoint type.
-  The deployment workflow retains the current SDK call shape for future
-  capability changes; today the App enforces bounded input, graph steps, and
-  model output instead.
-- Chat UI and MCP façade have isolated source trees. The façade was recreated
-  and starts successfully; both consumers parse the terminal Responses API
-  message rather than assuming `output[0]` is text, so tool-loop responses are
-  supported.
-
-See [Sprint 1 plan](docs/sprint-plans/sprint-1.md) for task-level evidence and
-[certification labs](docs/certification-labs/SPRINT_1_LABS.md) for isolated
-hands-on exercises.
+- [Current architecture](docs/architecture/ecommerce-agent-architecture.md)
+- [Redeployment runbook](docs/operations/redeploy.md)
+- [Chat event contract](docs/contracts/chat-ui-event-contract.md)
+- [Conversation persistence contract](docs/contracts/conversation-persistence.md)
+- [Implementation plan](docs/PLAN.md)
+- [Certification index](docs/certification/README.md)

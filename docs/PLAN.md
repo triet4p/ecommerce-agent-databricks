@@ -77,30 +77,33 @@ architecture from Sprint 1.
   preserving the Sprint 2 event contract and Sprint 3 conversation data.
   Sprint 4 implementation is deployed on Node; Sprint 4b completed the
   production-runtime, authenticated verification, rollback, and cutover gates.
-- [ ] **Milestone 8:** Consolidate Agent, MCP facade, React, and Streamlit demo
+- [x] **Milestone 8:** Consolidate Agent, MCP facade, React, and Streamlit demo
   sources under `ecommerce_agent/apps/` using a path-only refactor with
   unchanged logic, UI, deployment resources, and service contracts.
 - [ ] **Milestone 9:** Run offline MLflow evaluation, establish quality gates,
   and productionize observability and CI/CD.
+- [x] **Milestone 10:** Consolidate living documentation, publish a verified
+  redeployment runbook, and align architecture diagrams with the generated
+  App-artifact topology.
 
 ## Active Sprints
 
-- [Sprint 5](sprint-plans/sprint-5.md) — active: move Agent, MCP facade, React,
-  and a maintained Streamlit demo source under `ecommerce_agent/apps/` with
-  path-only changes and full local, integration, deployment, and browser
-  invariance certification.
+No sprint is currently active. Milestone 9 (evaluation, observability, and
+CI/CD) remains the next product backlog milestone.
 
 Execution dependency: Sprint 2 event contract -> Sprint 3 canonical persisted
 conversation items -> Sprint 4 React consumer -> Sprint 4b production cutover
--> Sprint 5 source-layout consolidation. Sprint 5 must preserve the existing
-event, persistence, identity, UI, and deployment contracts.
+-> Sprint 5 source-layout consolidation -> Sprint 6 documentation and
+operations consolidation.
 
 ## Documentation and Certification Index
 
-- [Target architecture and placement decisions](architecture/ecommerce-agent-architecture.md)
+- [Documentation index](README.md)
+- [Current architecture](architecture/ecommerce-agent-architecture.md)
 - [Editable draw.io architecture source](architecture/ecommerce-agent-architecture.drawio)
-- [Sprint 1 official Databricks implementation documentation index](SPRINT_1_DATABRICKS_DOCS_INDEX.md)
-- [Implementation-to-documentation and certification coverage index](CERTIFICATION_INDEX.md)
+- [Redeployment runbook](operations/redeploy.md)
+- [Databricks implementation references](reference/databricks-sprint-1-index.md)
+- [Certification coverage](certification/README.md)
 
 ## Completed Sprints
 
@@ -122,6 +125,13 @@ event, persistence, identity, UI, and deployment contracts.
 - [Sprint 4b](sprint-plans/sprint-4b.md) — completed 2026-07-24. Production
   serving, readiness, streaming, cancellation, graceful shutdown, authenticated
   browser parity, rollback, and React cutover gates passed.
+- [Sprint 5](sprint-plans/sprint-5.md) — completed 2026-07-24. Agent, MCP,
+  React, and Streamlit sources were consolidated under `ecommerce_agent/apps/`;
+  isolated `.build/apps` artifacts, authenticated cutover, and React restoration
+  were certified.
+- [Sprint 6](sprint-plans/sprint-6.md) — completed 2026-07-24. Living
+  documentation was classified, redeployment and UI-switch operations were
+  documented, and architecture source/previews were aligned with Sprint 5.
 
 ## Backlog / Future Work
 

@@ -4,8 +4,8 @@ Every tool call and result that reaches the browser must pass through the
 safety layers defined here before rendering.
 
 See Also:
-    - ``docs/chat-ui-event-contract.md`` §4 (Browser-Safe Tool Display Policy)
-    - ``docs/chat-ui-event-contract.md`` §5 (Thinking-Visualization Policy)
+    - ``docs/contracts/chat-ui-event-contract.md`` §4 (Browser-Safe Tool Display Policy)
+    - ``docs/contracts/chat-ui-event-contract.md`` §5 (Thinking-Visualization Policy)
 """
 
 from __future__ import annotations

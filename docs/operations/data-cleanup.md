@@ -1,4 +1,4 @@
-# Sprint 3b Legacy Conversation Data Cleanup
+# Legacy Conversation Data Cleanup
 
 ## Decision Required
 

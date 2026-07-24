@@ -1,5 +1,7 @@
 # Sprint 1 Certification Labs
 
+> Historical hands-on certification exercises retained for reference.
+
 These exercises are isolated from the production import graph. Use the project
 workspace credentials and catalog `ecommerce_agent`; do not create an endpoint
 for a lab. The two approved endpoints are reused only where stated.

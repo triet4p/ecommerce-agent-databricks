@@ -1,4 +1,4 @@
-# Sprint 3 — Contracts and Architecture Decisions
+# Conversation Persistence Contract
 
 ## S3-A1: Lakebase Autoscaling Availability
 

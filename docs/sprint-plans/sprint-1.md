@@ -79,7 +79,7 @@ The supported stabilization path is:
 Status legend: [ ] pending / [~] in progress / [x] done
 
 Before implementing a task, use the
-[Sprint 1 Databricks implementation documentation index](../SPRINT_1_DATABRICKS_DOCS_INDEX.md)
+[Sprint 1 Databricks implementation documentation index](../reference/databricks-sprint-1-index.md)
 to verify the current official platform guidance, release stage, locked API
 surface, and task-specific non-legacy constraints.
 

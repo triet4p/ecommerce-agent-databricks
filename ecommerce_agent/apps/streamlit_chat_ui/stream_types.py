@@ -6,7 +6,7 @@ stream parsing — every SSE ``data:`` line is validated against one of these
 types before being passed to the UI rendering layer.
 
 See Also:
-    - ``docs/chat-ui-event-contract.md`` for the full wire specification.
+    - ``docs/contracts/chat-ui-event-contract.md`` for the full wire specification.
 """
 
 from __future__ import annotations

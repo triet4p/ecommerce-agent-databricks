@@ -1,9 +1,9 @@
-# Sprint 1 Databricks Implementation Documentation Index
+# Databricks Sprint 1 Documentation Index
 
 Last verified against official documentation: **2026-07-16**.
 
 Purpose: give an implementation agent a task-oriented source index for
-[Sprint 1](sprint-plans/sprint-1.md). This is not a replacement for the sprint
+[Sprint 1](../sprint-plans/sprint-1.md). This is not a replacement for the sprint
 acceptance criteria or the architecture decisions. It identifies which current
 Databricks documentation is authoritative for each platform-facing task and
 where the agent must rely on repository evidence instead of guessing.
@@ -12,9 +12,9 @@ where the agent must rely on repository evidence instead of guessing.
 
 Before implementing any Sprint 1 task, read:
 
-1. [`AGENTS.md`](../AGENTS.md) for repository constraints.
-2. [Architecture decisions](../.agents/memory/decisions.md), newest entry last.
-3. [Global plan](PLAN.md) and [Sprint 1](sprint-plans/sprint-1.md).
+1. [`AGENTS.md`](../../AGENTS.md) for repository constraints.
+2. [Architecture decisions](../../.agents/memory/decisions.md), newest entry last.
+3. [Global plan](../PLAN.md) and [Sprint 1](../sprint-plans/sprint-1.md).
 4. The row for the selected task in this index.
 5. The linked official pages again at implementation time if this index is more
    than 30 days old or the page is marked Preview/Beta.
@@ -45,7 +45,7 @@ The implementation target is:
 
 | Component | Sprint 1 baseline | Verification source |
 |---|---:|---|
-| Python | 3.13 | [`pyproject.toml`](../pyproject.toml) |
+| Python | 3.13 | [`pyproject.toml`](../../pyproject.toml) |
 | `databricks-langchain` | 0.20.0 | `pyproject.toml` and `uv.lock` |
 | `databricks-sdk` | 0.120.0 after A1; current lock already resolves 0.120.0 | `uv.lock` |
 | LangChain | 1.x; current lock 1.3.13 | `uv.lock` |
@@ -86,7 +86,7 @@ snippet work. This repository is managed with `uv`.
 | C2-C5 | Existing `agent_core` public contracts and unit tests | [Connect agents to tools](https://docs.databricks.com/aws/en/agents/agent-framework/agent-tool), [Author agent: local Python tools](https://docs.databricks.com/aws/en/agents/agent-framework/author-agent) | Local registries and pure tools are repository concerns. Do not turn deterministic local calculations into UC functions without a governance reason. |
 | C6-C8 | Managed MCP ADR and task acceptance tests | [Managed MCP servers](https://docs.databricks.com/aws/en/agents/mcp/managed-mcp), [Use MCP servers in agents](https://docs.databricks.com/aws/en/agents/mcp/use-mcp-in-agents), [Databricks LangChain MCP client API](https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html), [Managed MCP `_meta` parameters](https://docs.databricks.com/aws/en/agents/mcp/managed-mcp-meta-param) | Feature is Public Preview. For the LangChain production path, use the locked top-level `DatabricksMultiServerMCPClient`/`DatabricksMCPServer` API; do not replace it with a lower-level docs example without a plan change. Use allowlisted server URLs, declare all underlying App resources, and never trigger `UCFunctionToolkit` automatically after MCP failure. |
 | C9 | Explicit compatibility target only | [Create agent tools using UC functions](https://docs.databricks.com/aws/en/agents/agent-framework/create-custom-tool), [Databricks LangChain API](https://api-docs.databricks.com/python/databricks-ai-bridge/latest/databricks_langchain.html) | Import only the documented top-level `UCFunctionToolkit`. Do not copy example version pins or use `databricks_langchain.uc_ai` internals. |
-| C10-C14 | Sprint policy plus verified DeepSeek evidence | [Connect agents to tools](https://docs.databricks.com/aws/en/agents/agent-framework/agent-tool), [`lessons-learned.md`](../.agents/memory/lessons-learned.md), [`DeepSeekServingEndpointStreaming.py`](../experiments/DeepSeekServingEndpointStreaming.py) | Databricks docs do not guarantee DeepSeek `tool_choice`. Required/state-changing actions need deterministic routing, schema validation, and completion checks outside the prompt. |
+| C10-C14 | Sprint policy plus verified DeepSeek evidence | [Connect agents to tools](https://docs.databricks.com/aws/en/agents/agent-framework/agent-tool), [`lessons-learned.md`](../../.agents/memory/lessons-learned.md), [`DeepSeekServingEndpointStreaming.py`](../../experiments/DeepSeekServingEndpointStreaming.py) | Databricks docs do not guarantee DeepSeek `tool_choice`. Required/state-changing actions need deterministic routing, schema validation, and completion checks outside the prompt. |
 
 ### D. Rules, skills, and files
 

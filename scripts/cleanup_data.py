@@ -1,7 +1,7 @@
 """Explicitly approved cleanup for legacy unowned conversation records.
 
 This intentionally cannot delete arbitrary conversation data.  See
-``docs/sprint-3b-data-cleanup.md`` for the required retention approval.
+``docs/operations/data-cleanup.md`` for the required retention approval.
 """
 
 from __future__ import annotations
