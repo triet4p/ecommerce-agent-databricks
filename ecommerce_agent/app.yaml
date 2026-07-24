@@ -1,5 +1,0 @@
-command: ["streamlit", "run", "app.py"]
-
-env:
-  - name: AGENT_APP_NAME
-    valueFrom: agent-app

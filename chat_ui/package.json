@@ -1,0 +1,39 @@
+{
+	"name": "@ecommerce-agent/chat-ui",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"workspaces": ["client", "server", "packages/*"],
+	"scripts": {
+		"dev": "concurrently -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
+		"dev:server": "npm run dev -w server",
+		"dev:client": "npm run dev -w client",
+		"build": "npm run build -w packages/core && npm run build -w client && npm run build -w server",
+		"start": "npm run start -w server",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"test": "npm run test:components && playwright test",
+		"test:deterministic": "npm run test",
+		"test:components": "vitest run",
+		"typecheck": "npm run build -w packages/core && npm run typecheck -w client && npm run build -w server"
+	},
+	"engines": {
+		"node": ">=18.0.0",
+		"npm": ">=8.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@playwright/test": "^1.52.0",
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/react": "^16.3.0",
+		"@types/node": "^22.15.0",
+		"concurrently": "^9.1.2",
+		"jsdom": "^26.1.0",
+		"tsx": "^4.19.4",
+		"typescript": "^5.7.3",
+		"vitest": "^3.2.6"
+	},
+	"dependencies": {
+		"dotenv": "^17.2.3"
+	}
+}

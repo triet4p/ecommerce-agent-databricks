@@ -1,6 +1,0 @@
-# Runtime dependencies for the Chat UI app with conversation persistence.
-# psycopg[binary] + psycopg-pool: PostgreSQL async connection pool.
-# databricks-sdk >= 0.120.0: required for postgres.generate_database_credential().
-psycopg[binary]>=3.2
-psycopg-pool>=3.2
-databricks-sdk>=0.120.0

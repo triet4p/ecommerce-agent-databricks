@@ -1,6 +1,18 @@
 bundle:
   name: ecommerce-agent
 
+sync:
+  exclude:
+    - .agents/**
+    - .claude/**
+    - .pytest_cache/**
+    - artifacts/**
+    - docs/**
+    - tests/**
+    - chat_ui/playwright-report/**
+    - chat_ui/test-results/**
+    - chat_ui/tests/**
+
 variables:
   app_name:
     description: Singleton Databricks App name shared by the deployment targets.
@@ -71,8 +83,8 @@ resources:
 
     ecommerce_agent_chat_ui:
       name: ecommerce-agent-chat-ui
-      description: Streamlit chat UI with Lakebase-backed conversation persistence.
-      source_code_path: ecommerce_agent
+      description: React chat UI with Lakebase-backed conversation persistence.
+      source_code_path: chat_ui
       resources:
         - name: agent-app
           app:

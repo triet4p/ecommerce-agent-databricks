@@ -1,16 +1,12 @@
-"""Regression tests for source-isolated App Responses parsers."""
+"""Regression tests for the source-isolated MCP App Responses parser."""
 
 import importlib.util
 from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
-PARSERS = (
-    ROOT / "ecommerce_agent" / "apps" / "chat_ui" / "response_output.py",
-    ROOT / "ecommerce_agent" / "apps" / "mcp_server" / "response_output.py",
-)
+PARSERS = (ROOT / "ecommerce_agent" / "apps" / "mcp_server" / "response_output.py",)
 
 
 def _parser(path: Path):

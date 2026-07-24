@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from ecommerce_agent.apps.app_oauth import resolve_agent_app_url
+from ecommerce_agent.apps.mcp_server.app_oauth import resolve_agent_app_url
 
 
 def test_target_app_url_is_resolved_from_resource_injected_name(monkeypatch):

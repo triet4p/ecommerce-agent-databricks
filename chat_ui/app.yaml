@@ -1,0 +1,12 @@
+# Run Node as PID 1 so Databricks SIGTERM reaches the graceful-shutdown handler.
+command: ["node", "server/dist/index.js"]
+
+env:
+  # Use an app-specific runtime signal so Databricks can still install the
+  # TypeScript/Vite build toolchain before the production process starts.
+  - name: APP_RUNTIME
+    value: production
+  - name: AGENT_APP_NAME
+    valueFrom: agent-app
+  - name: LAKEBASE_ENDPOINT
+    valueFrom: conversation-store

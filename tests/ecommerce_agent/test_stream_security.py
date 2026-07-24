@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -41,9 +42,6 @@ def _get_all_public_response_output_files() -> list[str]:
     return [
         "agent_core/orchestrator.py",
         "ecommerce_agent/agent_app/handlers.py",
-        "ecommerce_agent/apps/chat_ui/response_output.py",
-        "ecommerce_agent/apps/chat_ui/display_policy.py",
-        "ecommerce_agent/apps/chat_ui/sse_parser.py",
     ]
 
 
@@ -57,8 +55,6 @@ def _get_all_public_response_output_files() -> list[str]:
     [
         "agent_core/orchestrator.py",
         "ecommerce_agent/agent_app/handlers.py",
-        "ecommerce_agent/apps/chat_ui/response_output.py",
-        "ecommerce_agent/apps/chat_ui/display_policy.py",
     ],
 )
 def test_public_response_paths_have_no_banned_patterns(relative_path: str):
@@ -141,47 +137,8 @@ def test_safe_messages_handles_string_content():
 
 
 # ---------------------------------------------------------------------------
-# Behavioral: display_policy redaction
-# ---------------------------------------------------------------------------
-
-
-def test_display_policy_redacts_sensitive_args():
-    """The display_policy sanitize_arguments must redact secret-like keys."""
-    from ecommerce_agent.apps.chat_ui.display_policy import sanitize_arguments
-
-    args = json.dumps(
-        {
-            "token": "sensitive-token-value",
-            "order_id": "o-123",
-        }
-    )
-    sanitized = sanitize_arguments(args)
-    assert "<redacted>" in sanitized
-    assert "sensitive-token-value" not in sanitized
-    assert "o-123" in sanitized
-
-
-def test_display_policy_redacts_nested_secrets():
-    """Deeply nested keys with secret patterns must be redacted."""
-    from ecommerce_agent.apps.chat_ui.display_policy import sanitize_arguments
-
-    args = json.dumps(
-        {
-            "credentials": {
-                "api_key": "sk-1234567890abcdef",
-            }
-        }
-    )
-    sanitized = sanitize_arguments(args)
-    assert "<redacted>" in sanitized
-    assert "sk-1234567890abcdef" not in sanitized
-
-
-# ---------------------------------------------------------------------------
 # Static: compiled files
 # ---------------------------------------------------------------------------
-
-from pathlib import Path  # noqa: E402 — needed for helper above
 
 
 def test_no_banned_values_in_compiled_response_output():
