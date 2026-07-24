@@ -2,7 +2,7 @@ command:
   - sh
   - -c
   - >-
-    exec uv run --frozen uvicorn ecommerce_agent.agent_app.server:app
+    exec uv run --frozen uvicorn ecommerce_agent.apps.agent_app.server:app
     --host 0.0.0.0 --port "${DATABRICKS_APP_PORT:-8000}"
 
 env:

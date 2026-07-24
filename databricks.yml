@@ -9,9 +9,9 @@ sync:
     - artifacts/**
     - docs/**
     - tests/**
-    - chat_ui/playwright-report/**
-    - chat_ui/test-results/**
-    - chat_ui/tests/**
+    - ecommerce_agent/apps/chat_ui/playwright-report/**
+    - ecommerce_agent/apps/chat_ui/test-results/**
+    - ecommerce_agent/apps/chat_ui/tests/**
 
 variables:
   app_name:
@@ -27,6 +27,12 @@ variables:
     default: projects/ecommerce-agent-conversations/branches/production
   lakebase_database:
     default: projects/ecommerce-agent-conversations/branches/production/databases/databricks-postgres
+  chat_ui_source:
+    description: >-
+      Chat UI source path. Defaults to the React app
+      (ecommerce_agent/apps/chat_ui). Override to ecommerce_agent for the
+      Streamlit demo fallback.
+    default: ecommerce_agent/apps/chat_ui
 
 resources:
   experiments:
@@ -83,8 +89,11 @@ resources:
 
     ecommerce_agent_chat_ui:
       name: ecommerce-agent-chat-ui
-      description: React chat UI with Lakebase-backed conversation persistence.
-      source_code_path: chat_ui
+      description: >-
+        Chat UI with Lakebase-backed conversation persistence.
+        Default source is React (set var.chat_ui_source to
+        ecommerce_agent for the Streamlit demo fallback).
+      source_code_path: ${var.chat_ui_source}
       resources:
         - name: agent-app
           app:
@@ -99,7 +108,7 @@ resources:
     ecommerce_agent_mcp_facade:
       name: ecommerce-agent-mcp-facade
       description: Streamable HTTP MCP facade that invokes the agent App through OAuth.
-      source_code_path: ecommerce_agent/apps/mcp_server
+      source_code_path: ecommerce_agent/apps/mcp_facade
       resources:
         - name: agent-app
           app:

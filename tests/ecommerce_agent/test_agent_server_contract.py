@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from mlflow.types.responses import ResponsesAgentRequest
 
-from ecommerce_agent.agent_app.handlers import invoke_agent, stream_agent
+from ecommerce_agent.apps.agent_app.handlers import invoke_agent, stream_agent
 
 
 def _request() -> dict:

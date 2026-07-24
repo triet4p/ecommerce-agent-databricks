@@ -41,7 +41,7 @@ def _get_all_public_response_output_files() -> list[str]:
     """Return paths to modules that serialize agent responses for the browser."""
     return [
         "agent_core/orchestrator.py",
-        "ecommerce_agent/agent_app/handlers.py",
+        "ecommerce_agent/apps/agent_app/handlers.py",
     ]
 
 
@@ -54,7 +54,7 @@ def _get_all_public_response_output_files() -> list[str]:
     "relative_path",
     [
         "agent_core/orchestrator.py",
-        "ecommerce_agent/agent_app/handlers.py",
+        "ecommerce_agent/apps/agent_app/handlers.py",
     ],
 )
 def test_public_response_paths_have_no_banned_patterns(relative_path: str):

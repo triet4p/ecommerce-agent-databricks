@@ -1,6 +1,6 @@
 """Tests for the Agent App retriever keep-warm worker."""
 
-from ecommerce_agent.agent_app.retriever_warmup import RetrieverWarmup
+from ecommerce_agent.apps.agent_app.retriever_warmup import RetrieverWarmup
 
 
 def test_warm_once_uses_a_bounded_governed_lookup() -> None:

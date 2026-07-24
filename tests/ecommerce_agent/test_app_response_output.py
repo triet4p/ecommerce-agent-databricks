@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-PARSERS = (ROOT / "ecommerce_agent" / "apps" / "mcp_server" / "response_output.py",)
+PARSERS = (ROOT / "ecommerce_agent" / "apps" / "mcp_facade" / "response_output.py",)
 
 
 def _parser(path: Path):
