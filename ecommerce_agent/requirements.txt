@@ -1,0 +1,9 @@
+# Streamlit demo source-root dependencies.
+# Placed at ecommerce_agent/ because the bundle source_code_path is
+# ecommerce_agent/ (the entire directory is flattened into the runtime root),
+# and the Databricks App runtime only auto-installs from the source-root
+# requirements.txt.
+streamlit>=1.28.0
+psycopg[binary]>=3.2
+psycopg-pool>=3.2
+databricks-sdk>=0.120.0

@@ -248,6 +248,31 @@ class TestModuleImportability:
 class TestCurrentLayoutStillFunctional:
     """Smoke test: the pre-move codebase still passes basic checks."""
 
+    def test_streamlit_imports_from_flattened_source_root(self):
+        """Streamlit app imports resolve when ecommerce_agent/ is the source root.
+
+        Databricks flattens the source_code_path directory into the runtime
+        root, so ``ecommerce_agent`` is NOT a package name at deployment time.
+        All imports must use paths relative to that root
+        (e.g. ``apps.streamlit_chat_ui...``, ``conversation...``).
+        """
+        import importlib
+        import sys
+
+        source_root = str(ECOMMERCE_AGENT)
+        if source_root not in sys.path:
+            sys.path.insert(0, source_root)
+        try:
+            importlib.import_module("apps.streamlit_chat_ui.app")
+        except ImportError as exc:
+            pytest.fail(
+                f"Streamlit import failed from flattened source root "
+                f"({source_root}): {exc}"
+            )
+        finally:
+            if sys.path[0] == source_root:
+                sys.path.pop(0)
+
     def test_agent_core_compiles(self):
         """All Python source in agent_core/ compiles."""
         import compileall

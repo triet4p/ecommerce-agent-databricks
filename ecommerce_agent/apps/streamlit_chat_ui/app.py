@@ -19,21 +19,21 @@ import requests
 import streamlit as st
 from databricks.sdk import WorkspaceClient
 
-from ecommerce_agent.apps.streamlit_chat_ui.app_oauth import resolve_agent_app_url
-from ecommerce_agent.conversation.connection import create_pool
-from ecommerce_agent.conversation.identity import (
+from apps.streamlit_chat_ui.app_oauth import resolve_agent_app_url
+from conversation.connection import create_pool
+from conversation.identity import (
     TrustedIdentityError,
     trusted_owner_from_headers,
 )
-from ecommerce_agent.conversation.schema import migrate
-from ecommerce_agent.conversation.service import ConversationService
-from ecommerce_agent.apps.streamlit_chat_ui.display_policy import (
+from conversation.schema import migrate
+from conversation.service import ConversationService
+from apps.streamlit_chat_ui.display_policy import (
     derive_phase_label,
     sanitize_output,
     tool_display_name,
 )
-from ecommerce_agent.apps.streamlit_chat_ui.sse_parser import JSONEventParser
-from ecommerce_agent.apps.streamlit_chat_ui.stream_types import (
+from apps.streamlit_chat_ui.sse_parser import JSONEventParser
+from apps.streamlit_chat_ui.stream_types import (
     ErrorEvent,
     OutputItemDoneEvent,
     TextDeltaEvent,
