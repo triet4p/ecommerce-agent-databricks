@@ -6,12 +6,16 @@ sync:
     - .agents/**
     - .claude/**
     - .pytest_cache/**
+    - .ruff_cache/**
+    - .venv/**
     - artifacts/**
     - docs/**
+    - scripts/**
     - tests/**
-    - ecommerce_agent/apps/chat_ui/playwright-report/**
-    - ecommerce_agent/apps/chat_ui/test-results/**
-    - ecommerce_agent/apps/chat_ui/tests/**
+    - .build/**/node_modules/**
+    - .build/**/playwright-report/**
+    - .build/**/test-results/**
+    - .build/**/tests/**
 
 variables:
   app_name:
@@ -29,10 +33,10 @@ variables:
     default: projects/ecommerce-agent-conversations/branches/production/databases/databricks-postgres
   chat_ui_source:
     description: >-
-      Chat UI source path. Defaults to the React app
-      (ecommerce_agent/apps/chat_ui). Override to ecommerce_agent for the
-      Streamlit demo fallback.
-    default: ecommerce_agent/apps/chat_ui
+      Chat UI source path.  Defaults to the React app
+      (.build/apps/chat_ui).  Override to .build/apps/streamlit_chat_ui
+      for the Streamlit demo fallback.
+    default: .build/apps/chat_ui
 
 resources:
   experiments:
@@ -47,7 +51,7 @@ resources:
       # endpoints remain externally managed singleton dependencies.
       name: ${var.app_name}
       description: MLflow ResponsesAgent e-commerce support application.
-      source_code_path: .
+      source_code_path: .build/apps/agent_app
       resources:
         - name: llm-endpoint
           serving_endpoint:
@@ -91,8 +95,9 @@ resources:
       name: ecommerce-agent-chat-ui
       description: >-
         Chat UI with Lakebase-backed conversation persistence.
-        Default source is React (set var.chat_ui_source to
-        ecommerce_agent for the Streamlit demo fallback).
+        Default source is React (.build/apps/chat_ui).  Set
+        var.chat_ui_source to .build/apps/streamlit_chat_ui for the
+        Streamlit demo fallback.
       source_code_path: ${var.chat_ui_source}
       resources:
         - name: agent-app
@@ -108,7 +113,7 @@ resources:
     ecommerce_agent_mcp_facade:
       name: ecommerce-agent-mcp-facade
       description: Streamable HTTP MCP facade that invokes the agent App through OAuth.
-      source_code_path: ecommerce_agent/apps/mcp_facade
+      source_code_path: .build/apps/mcp_facade
       resources:
         - name: agent-app
           app:

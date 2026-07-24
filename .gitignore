@@ -10,3 +10,6 @@
 # Local MLflow file-store database produced by offline tests.
 mlflow.db
 mlruns/
+
+# Generated deployment artifacts (scripts/build_apps.py).
+.build/

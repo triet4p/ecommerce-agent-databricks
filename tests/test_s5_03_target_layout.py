@@ -93,14 +93,13 @@ class TestSourcePathDefaults:
     """Verify Chat UI source defaults to React per the Sprint 5 plan."""
 
     def test_chat_ui_source_default_is_react(self):
-        """The default Chat UI source_code_path points to the React monorepo."""
+        """The default Chat UI source_code_path points to the React build artifact."""
         bundle = _read_databricks_yml()
         apps = bundle.get("resources", {}).get("apps", {})
         chat_ui = apps.get("ecommerce_agent_chat_ui", {})
         source = chat_ui.get("source_code_path", "")
-        # Current pre-move value; will change to apps/chat_ui post-move
-        assert "chat_ui" in source or "apps/chat_ui" in source, (
-            f"Chat UI source_code_path should reference chat_ui, got '{source}'"
+        assert "chat_ui" in source and "streamlit" not in source, (
+            f"Default source should reference chat_ui (not streamlit), got '{source}'"
         )
 
     def test_chat_ui_is_not_streamlit_by_default(self):
@@ -171,18 +170,21 @@ class TestLegacyPathAbsence:
         )
 
     def test_no_root_chat_ui_source_post_move(self):
-        """Root chat_ui/ must NOT be the deployable source after S5-07.
-
-        Note: a residual root chat_ui/ may exist as a developer convenience
-        but the databricks.yml source_code_path must use apps/chat_ui.
-        """
+        """Chat UI source_code_path uses the chat_ui_source variable."""
         bundle = _read_databricks_yml()
         apps = bundle.get("resources", {}).get("apps", {})
         chat_ui = apps.get("ecommerce_agent_chat_ui", {})
         source = chat_ui.get("source_code_path", "")
-        assert source != "chat_ui", (
-            "source_code_path still points to legacy 'chat_ui', "
-            "should be 'ecommerce_agent/apps/chat_ui'"
+        # Must use the parameterized variable — not a hardcoded legacy path
+        assert "chat_ui_source" in source, (
+            f"source_code_path should use var.chat_ui_source, got '{source}'"
+        )
+        # Variable default must point to the build artifact
+        variables = bundle.get("variables", {})
+        cs_var = variables.get("chat_ui_source", {})
+        default = cs_var.get("default", "")
+        assert ".build" in default, (
+            f"chat_ui_source default should use .build/, got '{default}'"
         )
 
 
@@ -192,19 +194,23 @@ class TestLegacyPathAbsence:
 class TestStreamlitOverride:
     """Verify the Streamlit demo override configuration."""
 
-    def test_ecommerce_agent_app_yaml_exists(self):
-        """ecommerce_agent/app.yaml exists for the Streamlit demo override."""
-        path = ECOMMERCE_AGENT / "app.yaml"
+    def test_streamlit_build_artifact_exists(self):
+        """Streamlit build artifact has app.yaml at root."""
+        path = REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui" / "app.yaml"
+        if not path.exists():
+            pytest.skip("Run scripts/build_apps.py first")
         assert path.is_file()
 
     def test_streamlit_entry_point_exists(self):
-        """apps/streamlit_chat_ui/app.py is the Streamlit demo entry point."""
+        """apps/streamlit_chat_ui/app.py is the Streamlit demo entry point (source)."""
         path = APPS_DIR / "streamlit_chat_ui" / "app.py"
         assert path.is_file()
 
-    def test_streamlit_requirements_exist(self):
-        """apps/streamlit_chat_ui/requirements.txt exists."""
-        path = APPS_DIR / "streamlit_chat_ui" / "requirements.txt"
+    def test_streamlit_build_has_conversation(self):
+        """Streamlit build artifact includes conversation/ package."""
+        path = REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui" / "conversation" / "__init__.py"
+        if not path.exists():
+            pytest.skip("Run scripts/build_apps.py first")
         assert path.is_file()
 
 
@@ -223,14 +229,27 @@ class TestModuleImportability:
         except ImportError as exc:
             pytest.fail(f"Import failed: {exc}")
 
-    def test_import_mcp_facade_from_target(self):
-        """Can import from ecommerce_agent.apps.mcp_facade.server."""
-        import importlib
+    def test_import_mcp_facade_from_build_artifact(self):
+        """MCP facade imports resolve from the flat build artifact root.
 
+        The deployment flattens .build/apps/mcp_facade/ to the runtime root,
+        so imports must be local (``from app_oauth import ...``).
+        """
+        import importlib
+        import sys
+
+        build_root = str(REPO_ROOT / ".build" / "apps" / "mcp_facade")
+        if build_root not in sys.path:
+            sys.path.insert(0, build_root)
         try:
-            importlib.import_module("ecommerce_agent.apps.mcp_facade.server")
+            importlib.import_module("server")
         except ImportError as exc:
-            pytest.fail(f"Import failed: {exc}")
+            pytest.fail(
+                f"MCP import failed from build artifact ({build_root}): {exc}"
+            )
+        finally:
+            if sys.path[0] == build_root:
+                sys.path.pop(0)
 
     def test_import_conversation_still_works(self):
         """Canonical conversation package is importable (should always pass)."""
@@ -248,29 +267,47 @@ class TestModuleImportability:
 class TestCurrentLayoutStillFunctional:
     """Smoke test: the pre-move codebase still passes basic checks."""
 
-    def test_streamlit_imports_from_flattened_source_root(self):
-        """Streamlit app imports resolve when ecommerce_agent/ is the source root.
+    def test_streamlit_imports_from_build_artifact(self):
+        """Streamlit imports resolve from the build artifact source root.
 
-        Databricks flattens the source_code_path directory into the runtime
-        root, so ``ecommerce_agent`` is NOT a package name at deployment time.
-        All imports must use paths relative to that root
-        (e.g. ``apps.streamlit_chat_ui...``, ``conversation...``).
+        Databricks flattens .build/apps/streamlit_chat_ui/ to the runtime
+        root, so imports must use flat paths
+        (``apps.streamlit_chat_ui...``, ``conversation...``).
         """
         import importlib
         import sys
 
-        source_root = str(ECOMMERCE_AGENT)
-        if source_root not in sys.path:
-            sys.path.insert(0, source_root)
+        build_root = str(REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui")
+        if build_root not in sys.path:
+            sys.path.insert(0, build_root)
         try:
             importlib.import_module("apps.streamlit_chat_ui.app")
         except ImportError as exc:
             pytest.fail(
-                f"Streamlit import failed from flattened source root "
-                f"({source_root}): {exc}"
+                f"Streamlit import failed from build artifact "
+                f"({build_root}): {exc}"
             )
         finally:
-            if sys.path[0] == source_root:
+            if sys.path[0] == build_root:
+                sys.path.pop(0)
+
+    def test_mcp_facade_imports_from_build_artifact(self):
+        """MCP facade imports resolve from the flat build artifact root."""
+        import importlib
+        import sys
+
+        build_root = str(REPO_ROOT / ".build" / "apps" / "mcp_facade")
+        if build_root not in sys.path:
+            sys.path.insert(0, build_root)
+        try:
+            importlib.import_module("server")
+        except ImportError as exc:
+            pytest.fail(
+                f"MCP import failed from build artifact "
+                f"({build_root}): {exc}"
+            )
+        finally:
+            if sys.path[0] == build_root:
                 sys.path.pop(0)
 
     def test_agent_core_compiles(self):

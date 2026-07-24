@@ -12,8 +12,8 @@ import requests
 from databricks.sdk import WorkspaceClient
 from mcp.server.fastmcp import FastMCP
 
-from ecommerce_agent.apps.mcp_facade.app_oauth import resolve_agent_app_url
-from ecommerce_agent.apps.mcp_facade.response_output import extract_response_text
+from app_oauth import resolve_agent_app_url
+from response_output import extract_response_text
 
 mcp = FastMCP("ecommerce-support-agent")
 AGENT_REQUEST_TIMEOUT_SECONDS = 180

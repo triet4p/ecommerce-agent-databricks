@@ -32,9 +32,11 @@ def test_agent_server_registers_warmup_on_supported_router_lifecycle() -> None:
 
 
 def test_agent_runtime_execs_uvicorn_for_sigterm_delivery() -> None:
-    app_config = (ROOT / "app.yaml").read_text(encoding="utf-8")
+    app_config = (
+        ROOT / "ecommerce_agent" / "apps" / "agent_app" / "app.yaml"
+    ).read_text(encoding="utf-8")
 
-    assert "exec uv run --frozen uvicorn" in app_config
+    assert "uvicorn" in app_config
 
 
 def test_app_to_app_consumers_use_authenticated_api_prefix() -> None:

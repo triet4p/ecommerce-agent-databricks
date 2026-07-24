@@ -1,5 +1,0 @@
-command: ["streamlit", "run", "apps/streamlit_chat_ui/app.py"]
-
-env:
-  - name: AGENT_APP_NAME
-    valueFrom: agent-app

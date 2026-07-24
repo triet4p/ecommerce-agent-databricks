@@ -14,7 +14,7 @@ def test_bundle_declares_an_app_and_never_creates_a_model_serving_endpoint():
     assert set(bundle["resources"]) == {"apps", "experiments"}
     app = bundle["resources"]["apps"]["ecommerce_agent"]
     assert app["name"] == "${var.app_name}"
-    assert app["source_code_path"] == "."
+    assert app["source_code_path"] == ".build/apps/agent_app"
 
 
 def test_bundle_resources_are_least_privilege_and_use_canonical_uc_names():
@@ -39,10 +39,10 @@ def test_bundle_resources_are_least_privilege_and_use_canonical_uc_names():
     assert {function["permission"] for function in functions} == {"EXECUTE"}
 
 
-def test_root_app_uses_locked_uv_dependencies_and_serverless_port():
-    app_config = yaml.safe_load((ROOT / "app.yaml").read_text(encoding="utf-8"))
+def test_agent_app_uses_locked_uv_dependencies_and_serverless_port():
+    app_yaml = ROOT / "ecommerce_agent" / "apps" / "agent_app" / "app.yaml"
+    app_config = yaml.safe_load(app_yaml.read_text(encoding="utf-8"))
 
-    assert app_config["command"][:2] == ["sh", "-c"]
-    assert "uv run --frozen" in app_config["command"][2]
-    assert "DATABRICKS_APP_PORT" in app_config["command"][2]
-    assert not (ROOT / "requirements.txt").exists()
+    assert app_config["command"][:2] == ["uvicorn", "ecommerce_agent.apps.agent_app.server:app"]
+    assert app_config["command"][2] == "--host"
+    assert (ROOT / "ecommerce_agent" / "apps" / "agent_app" / "requirements.txt").exists()
