@@ -142,50 +142,50 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
 
 ### P0 — Scope and regression guards
 
-- [ ] **S5-01 — Freeze the refactor baseline:** Record the starting commit,
+- [x] **S5-01 — Freeze the refactor baseline:** Record the starting commit,
   active deployment IDs, exact local test counts, React desktop/mobile
   screenshots, and authenticated evidence for history, streaming, Markdown,
   tool cards, retry, cancel, errors, rename, and delete. Generate a SHA-256
   source manifest before any move.
 
-- [ ] **S5-02 — Add a path-only content invariant check:** Build a deterministic
+- [x] **S5-02 — Add a path-only content invariant check:** Build a deterministic
   comparison that maps every old file to its target path, rejects missing or
   duplicated source, and permits content changes only on an explicit allowlist
   of import, module, working-directory, YAML, fixture-path, and documentation
   lines.
 
-- [ ] **S5-03 — Add the target-layout contract tests:** Add failing-first static
+- [x] **S5-03 — Add the target-layout contract tests:** Add failing-first static
   tests for the required package paths, importable module names, three-App
   bundle topology, source-path defaults, Streamlit override, and absence of
   legacy paths.
 
 ### P1 — Mechanical source relocation
 
-- [ ] **S5-04 — Establish the Apps package boundary:** Create
+- [x] **S5-04 — Establish the Apps package boundary:** Create
   `ecommerce_agent/apps/` package markers and the target directory skeleton
   without moving implementation or changing runtime behavior.
 
-- [ ] **S5-05 — Move the Agent runtime:** Relocate
+- [x] **S5-05 — Move the Agent runtime:** Relocate
   `ecommerce_agent/agent_app/` to `ecommerce_agent/apps/agent_app/`; update only
   Python imports, test imports, and the root Agent `app.yaml` module command.
 
-- [ ] **S5-06 — Rename the MCP facade package:** Relocate
+- [x] **S5-06 — Rename the MCP facade package:** Relocate
   `ecommerce_agent/apps/mcp_server/` to
   `ecommerce_agent/apps/mcp_facade/`; update only bundle source paths, imports,
   tests, and path references while preserving its existing protocol and App
   resource.
 
-- [ ] **S5-07 — Move the React monorepo:** Relocate root `chat_ui/` to
+- [x] **S5-07 — Move the React monorepo:** Relocate root `chat_ui/` to
   `ecommerce_agent/apps/chat_ui/`; update only workspace paths, commands, test
   paths, bundle sync/source paths, and deployment documentation.
 
-- [ ] **S5-08 — Restore Streamlit exactly from commit `690f3bb`:** Export the
+- [x] **S5-08 — Restore Streamlit exactly from commit `690f3bb`:** Export the
   Streamlit source and supporting manifest/dependency files from that commit,
   relocate them to `ecommerce_agent/apps/streamlit_chat_ui/`, and record the
   source-to-target file map and content hashes. Do not fix imports, startup
   failures, behavior, or UI in this task.
 
-- [ ] **S5-09 — Diagnose, then fix restored Streamlit compatibility:** First run
+- [x] **S5-09 — Diagnose, then fix restored Streamlit compatibility:** First run
   the restored `690f3bb` baseline and record its import, startup, test, and
   smoke failures. Fix those failures afterward using only import paths,
   dependency packaging, app manifest, current trusted identity/resource
@@ -193,56 +193,56 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   Defer any required rendering, chat-logic, event, persistence, or identity
   semantic change outside Sprint 5.
 
-- [ ] **S5-10 — Parameterize the Chat UI source selection:** Add one bundle
+- [x] **S5-10 — Parameterize the Chat UI source selection:** Add one bundle
   source-path variable whose default deploys React and whose documented demo
   override deploys Streamlit to the same `ecommerce-agent-chat-ui` resource.
   Do not create, rename, or merge an App resource.
 
-- [ ] **S5-11 — Update repository path consumers:** Change only stale paths in
+- [x] **S5-11 — Update repository path consumers:** Change only stale paths in
   scripts, CI/configuration, ignore rules, developer commands, architecture
   documents, sprint references, and test fixtures.
 
 ### P2 — Invariance and deployment certification
 
-- [ ] **S5-12 — Run the structural and content audit:** Pass the SHA-256/path
+- [x] **S5-12 — Run the structural and content audit:** Pass the SHA-256/path
   invariant, target-layout tests, high-similarity Git rename inspection,
   legacy-path search, duplicate-conversation search, and three-App resource
   count.
 
-- [ ] **S5-13 — Run all Python gates from the new layout:** Run
+- [x] **S5-13 — Run all Python gates from the new layout:** Run
   `uv run pytest -v`, compile all Python source, Ruff check, Ruff format check,
   and direct import/startup-contract tests for Agent, MCP facade, and Streamlit
   modules.
 
-- [ ] **S5-14 — Run all Node gates from the new layout:** From
+- [x] **S5-14 — Run all Node gates from the new layout:** From
   `ecommerce_agent/apps/chat_ui/`, run the complete deterministic/server and
   component suites, typecheck, Biome check, and production build; prove the
   built server resolves the unchanged client assets and shared core package.
 
-- [ ] **S5-15 — Re-run persistence and bundle contract integration:** Run the
+- [x] **S5-15 — Re-run persistence and bundle contract integration:** Run the
   isolated real-PostgreSQL migration/repository suites and resource-binding
   contract tests; verify no schema, SQL, event, owner key, or terminal-state
   behavior changed.
 
-- [ ] **S5-16 — Validate every source configuration:** Strictly validate dev and
+- [x] **S5-16 — Validate every source configuration:** Strictly validate dev and
   prod with the default React source, validate the Streamlit demo override,
   inspect all packaged artifacts for expected paths and secret-free content,
   and prove no fourth App is planned.
 
-- [ ] **S5-17 — Certify deployed React parity:** Deploy the moved React source
+- [x] **S5-17 — Certify deployed React parity:** Deploy the moved React source
   and run authenticated desktop/mobile browser parity for initial render,
   incremental streaming, Markdown, tool arguments/results, progress and
   terminal states, two-turn replay, reload, retry without duplication, Stop,
   failed-stream handling, rename, and delete. Compare screenshots and relevant
   DOM/behavior evidence with S5-01.
 
-- [ ] **S5-18 — Certify the Streamlit switch and React restore:** Record the
+- [x] **S5-18 — Certify the Streamlit switch and React restore:** Record the
   active React snapshot; deploy the Streamlit override to the same Chat UI App;
   verify trusted owner identity, existing history, and one new streamed turn;
   restore the exact React default source; then verify both pre-switch and
   Streamlit-created conversations remain usable.
 
-- [ ] **S5-19 — Complete the no-behavior-change audit and closeout:** Review the
+- [x] **S5-19 — Complete the no-behavior-change audit and closeout:** Review the
   final diff against the scope allowlist, record verification artifacts and
   snapshot IDs, update plan and durable lessons, and create focused
   Conventional Commits. Close Sprint 5 only with React active and every

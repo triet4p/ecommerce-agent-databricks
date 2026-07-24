@@ -338,7 +338,7 @@ Errors encountered during streaming are propagated as `error` SSE events
 
 ## 7. Non-Streaming Compatibility
 
-The MCP facade (`ecommerce_agent/apps/mcp_server/`) and all non-streaming
+The MCP facade (`ecommerce_agent/apps/mcp_facade/`) and all non-streaming
 clients use `stream: false`. Their contract remains:
 
 - Response is a single JSON object conforming to `ResponsesAgentResponse`.

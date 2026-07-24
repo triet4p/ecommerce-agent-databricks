@@ -1,0 +1,109 @@
+========================================================================
+S5-02 Path-Only Content Invariant Report
+========================================================================
+Baseline entries:  283
+Current entries:   218
+Planned moves:     3
+Violations:        80
+Warnings:          16
+========================================================================
+
+--- VIOLATIONS ---
+  CONTENT: 'app.yaml' — YAML file content changed. Manual review required during S5-12 audit to confirm only source_code_path, module commands, and bundle paths changed.
+  CONTENT: 'ecommerce_agent/apps/chat_ui/app.yaml' — YAML file content changed. Manual review required during S5-12 audit to confirm only source_code_path, module commands, and bundle paths changed.
+  CONTENT: 'ecommerce_agent/apps/chat_ui/biome.json' hash changed (ada4123a -> 1b37e5a5) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/index.html' hash changed (14f5d42f -> b1985c81) -- file type '.html' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/package.json' hash changed (cf459566 -> ca3c1165) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/postcss.config.js' hash changed (b2fc97d0 -> 6c0333ae) -- file type '.js' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/App.tsx' hash changed (ab0ea038 -> 4ea3a721) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/Composer.tsx' hash changed (176aa9c2 -> b22be4e9) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ConversationWelcome.tsx' hash changed (d95f1bdb -> f5baba99) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/Message.tsx' hash changed (d8a5c607 -> c5ce35ac) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/Sidebar.tsx' hash changed (3b7effd7 -> e66ffe98) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ToolCard.tsx' hash changed (0eeb3bd8 -> b1aeddf2) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ui/Button.tsx' hash changed (f9eeee19 -> 9be62d5b) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ui/Collapsible.tsx' hash changed (73bda015 -> 47a73fb3) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ui/Dialog.tsx' hash changed (02d96c7d -> acba4690) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ui/Input.tsx' hash changed (cd394101 -> 06109146) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/components/ui/Separator.tsx' hash changed (51c366df -> 852e9387) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/contexts/ChatContext.tsx' hash changed (3243d7c7 -> 795b853a) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/hooks/useChat.ts' hash changed (ae6873f0 -> 78645b42) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/hooks/useConversations.ts' hash changed (2a3b3efe -> 8bc69c97) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/index.css' hash changed (19c9fb4d -> 2c06df6f) -- file type '.css' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/lib/api.ts' hash changed (3c34cf58 -> a1c8fb7a) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/main.tsx' hash changed (d46f584e -> e7e0270d) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/src/pages/ChatPage.tsx' hash changed (5befee53 -> 6a8cc03e) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/tsconfig.json' hash changed (1daaa1cd -> f12f5ff9) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/tsconfig.node.json' hash changed (61315917 -> 4fb5332c) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/client/vite.config.ts' hash changed (6f98941a -> 000e1719) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/package.json' hash changed (88526ea7 -> 5237e2bf) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/packages/core/package.json' hash changed (6e0cab66 -> b92f0b51) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/packages/core/src/index.ts' hash changed (8a765801 -> d300e0a8) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/packages/core/tsconfig.json' hash changed (6cb6b4b6 -> 1ff9651b) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/playwright.config.ts' hash changed (2ca7970e -> 26ec37d7) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/package.json' hash changed (2a9f42fd -> d5d622b1) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/env.ts' hash changed (dfdeb1a4 -> b1784c48) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/index.ts' hash changed (1f1b30ab -> ad1fb575) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/lib/conversation.ts' hash changed (87222fd2 -> 49a4dac9) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/lib/lakebase.ts' hash changed (db6c0224 -> 94cc8552) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/lib/oauth.ts' hash changed (bfee7774 -> 3a9a8283) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/lib/schema.ts' hash changed (9d8b8e5c -> d42b342c) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/lib/workspace-auth.ts' hash changed (cabf4b11 -> 16c8c219) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/middleware/identity.ts' hash changed (9d7ccd67 -> c5f50bf6) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/routes/conversations.ts' hash changed (f4bde528 -> ddd302a8) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/routes/health.ts' hash changed (ee6689c3 -> 5ad32049) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/routes/identity.ts' hash changed (347b56cc -> 95a7028f) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/routes/turns.ts' hash changed (b6e8983c -> f7d15608) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/src/types/express.d.ts' hash changed (2581dc6d -> a3862553) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/tsconfig.json' hash changed (2d13c99e -> 0a67748f) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/server/tsdown.config.ts' hash changed (0f3a4e3c -> c5d8cac7) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/ApiStream.test.ts' hash changed (a991a36c -> 168fd725) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/ChatPageHelpers.test.ts' hash changed (6a0474ad -> bb5672af) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/Composer.test.tsx' hash changed (8c12cdd5 -> fced6078) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/ConversationWelcome.test.tsx' hash changed (9a1b57df -> ab79d7e9) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/HistoryHydration.test.ts' hash changed (3a418063 -> 314f0530) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/Message.test.tsx' hash changed (c4313396 -> 137dd8bd) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/Sidebar.test.tsx' hash changed (49a765fd -> 24e34207) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/UseChatError.test.tsx' hash changed (216d83c1 -> f4313324) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/UseChatIdle.test.tsx' hash changed (591f2b25 -> ee2e5a78) -- file type '.tsx' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/components/setup.ts' hash changed (c2ccf241 -> d6e07a65) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/display-policy.spec.ts' hash changed (304adc97 -> 95d8ad33) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/e2e/chat.spec.ts' hash changed (fe7d109c -> 2f130547) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/health.spec.ts' hash changed (d7545584 -> 2271442d) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/identity.spec.ts' hash changed (0243cf7f -> 11e688a4) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/integration/postgres.spec.ts' hash changed (51003eab -> c793d4bb) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/persistence-policy.spec.ts' hash changed (1b1392ac -> 8c236a16) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/reducer.spec.ts' hash changed (4c2b3208 -> be16cb86) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/server-routes.spec.ts' hash changed (beeaf832 -> 0e67b927) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/server.spec.ts' hash changed (faa61ba0 -> b6e1573c) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tests/stream-lifecycle.spec.ts' hash changed (6c114254 -> 8513d2ee) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/tsconfig.json' hash changed (e0aa6eea -> 5225a24e) -- file type '.json' is not in the unconditional-allow set
+  CONTENT: 'ecommerce_agent/apps/chat_ui/vitest.config.ts' hash changed (58c683e5 -> 19b7732d) -- file type '.ts' is not in the unconditional-allow set
+  CONTENT: 'databricks.yml' — YAML file content changed. Manual review required during S5-12 audit to confirm only source_code_path, module commands, and bundle paths changed.
+  CONTENT: 'ecommerce_agent/apps/agent_app/app.yaml' — YAML file content changed. Manual review required during S5-12 audit to confirm only source_code_path, module commands, and bundle paths changed.
+  CONTENT: 'ecommerce_agent/apps/agent_app/server.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'ecommerce_agent/apps/mcp_facade/server.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_agent_server_contract.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_app_api_contract.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_app_oauth.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_app_response_output.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_retriever_warmup.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+  CONTENT: 'tests/ecommerce_agent/test_stream_security.py' — Python file content changed. Manual review required during S5-12 audit to confirm only import paths were updated.
+
+--- WARNINGS ---
+  UNEXPECTED: '.env' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: '.gitignore' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'docs/architecture/ecommerce-agent-architecture.drawio' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'docs/architecture/previews/architecture-page-1.png' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'docs/architecture/previews/architecture-page-2.png' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'docs/architecture/previews/architecture-page-3.png' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/app.yaml' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/chat_ui/.gitignore' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/app.yaml' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/app_oauth.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/display_policy.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/response_output.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/sse_parser.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'ecommerce_agent/apps/streamlit_chat_ui/stream_types.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'scripts/s5_02_path_invariant.py' is new since baseline (not in the planned NEW_FILES set)
+  UNEXPECTED: 'tests/test_s5_03_target_layout.py' is new since baseline (not in the planned NEW_FILES set)
