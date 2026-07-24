@@ -1,13 +1,14 @@
-# Task Summary: S5-19 — Complete the No-Behavior-Change Audit and Closeout
+# Task Summary: S5-19 — Closeout Pending Manual Gates
 
 **Sprint:** Sprint 5 — Source Layout Consolidation
 **Task:** S5-19
 
 ## Summary of Work
-Reviewed the final diff against the Sprint 5 scope allowlist. Every change is a
-path, import, manifest, or documentation update. No agent prompts, tools,
-retriever behavior, database schema, React rendering, MCP protocol, or any other
-behavior was modified.
+
+The source-diff and local verification audit passed, but Sprint 5 is not closed.
+Authenticated React parity passed on 2026-07-24. The real Streamlit switch then
+exposed a flattened-source import failure and missing source-root dependency
+file, so S5-09, S5-16, S5-18, and this closeout remain open.
 
 ## Final Diff Audit
 
@@ -56,8 +57,8 @@ behavior was modified.
 | S5-14 Node gates | 14/14 component tests; Biome clean; both builds pass |
 | S5-15 Persistence/bundle | 80/80 passed |
 | S5-16 Bundle validation | 4/4 configurations validated |
-| S5-17 React deployment | Agent + Chat UI ACTIVE/SUCCEEDED |
-| S5-18 Streamlit prepared | Validated, switch procedure documented |
+| S5-17 React deployment/browser parity | Passed |
+| S5-18 Streamlit switch | Failed before initialization; React restored |
 
 ## Sprint 5 Closeout Checklist
 
@@ -70,14 +71,19 @@ behavior was modified.
 - [x] Persistence and bundle contract tests pass (80/80)
 - [x] Dev and prod bundles validate (React default + Streamlit override)
 - [x] Exactly three Apps declared
-- [x] React is the active Chat UI at closeout
-- [x] Streamlit demo override configured and validated
+- [x] React is the active Chat UI after failed switch testing
+- [ ] Streamlit demo starts with the deployed flattened source root
+- [ ] Streamlit reads existing owner-scoped history
+- [ ] Streamlit completes and persists a new streamed turn
+- [ ] React restore reads both pre-switch and Streamlit-created history
 
 ## Additional Notes
-- Manual browser-based verification (S5-17 detailed checklist) is documented but
-  requires Databricks-authenticated browser access that is not available from the
-  terminal. The user should complete the browser parity checklist before merging.
-- The Streamlit switch (S5-18) was not executed to avoid interrupting the active
-  React deployment. The full switch procedure is documented in the S5-18 artifact.
-- Pre-existing Ruff lint issues (133 warnings) are unchanged — Sprint 5 introduced
-  no new lint violations in non-Sprint-5 files.
+
+- Tested React snapshot: `01f18714e8061ccd96694f012ab53749`.
+- Failed Streamlit snapshot: `01f18718040d132f88e1417b53d2b66c`.
+- Restored React snapshot: `01f1871856bc198d8add093e495029b1`.
+- Streamlit browser error:
+  `ModuleNotFoundError: No module named 'ecommerce_agent'`.
+- Streamlit build warning:
+  `No dependencies file found. Skipping installation`.
+- Pre-existing Ruff lint issues (133 warnings) are unchanged.

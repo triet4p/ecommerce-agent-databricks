@@ -31,26 +31,33 @@ variable).
 - **Component tests:** 14/14 passed from new location
 - **Playwright tests:** 19+ listed, ready for execution
 
-### Manual browser verification (required — cannot be automated from terminal)
+### Authenticated browser verification (completed 2026-07-24)
 
 The following must be verified by opening
 https://ecommerce-agent-chat-ui-980720428762316.aws.databricksapps.com in a
 browser with Databricks authentication:
 
-- [ ] Initial render (welcome screen, sidebar, composer)
-- [ ] Incremental streaming (text appears progressively)
-- [ ] Markdown rendering (GFM: headings, lists, bold, code blocks)
-- [ ] Tool cards (arguments visible, results rendered)
-- [ ] Progress and terminal states (phase labels)
-- [ ] Two-turn replay (load conversation, send second message)
-- [ ] Reload preserves history
-- [ ] Retry without duplicating user message
-- [ ] Stop button during streaming
-- [ ] Failed-stream error handling
-- [ ] Rename conversation
-- [ ] Delete conversation
-- [ ] Desktop and mobile viewport
+- [x] Initial render (welcome screen, sidebar, composer)
+- [x] Incremental streaming (preparing, tool, and text phases observed)
+- [x] Markdown rendering (GFM heading, table, list, bold, and code)
+- [x] Tool cards (arguments and result visible)
+- [x] Progress and terminal states
+- [x] Two-turn replay
+- [x] Reload preserves history and tool provenance
+- [x] Retry without duplicating the user message
+- [x] Stop during streaming; reload contains no cancelled partial turn
+- [x] Failed-request error handling with an oversized request
+- [x] Rename conversation
+- [x] Delete conversation
+- [x] Desktop and 390-by-844 mobile viewport without horizontal overflow
+
+Evidence conversation:
+`0b74ece8-2b2c-40dc-89b5-26756e023c53`, renamed to
+`S5 React parity temp`. The tool turn rendered order lookup arguments/result
+and a two-column Markdown table; a second turn rendered exactly two bullets.
+The temporary parity and Stop-test conversations were soft-deleted after
+evidence collection.
 
 ## Testing
-- **Status:** Automated checks passed; manual browser verification documented above
+- **Status:** Automated and authenticated browser checks passed
 - **Execution Command:** `databricks bundle deploy -t dev --profile Ecommerce-Agent`
