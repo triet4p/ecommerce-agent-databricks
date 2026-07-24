@@ -7,9 +7,12 @@ production-quality conversational experience. The next delivery sequence first
 stabilizes a UI-independent Responses API streaming contract, then adds durable
 per-user session history in Lakebase, and finally replaces the temporary
 Streamlit client with a React chat application based on the current official
-Databricks template. The implementation must keep `agent_core`
-use-case-independent and preserve the verified Agent App, MCP, Unity Catalog,
-DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
+Databricks template. After cutover, consolidate every deployable source under
+`ecommerce_agent/apps/` without changing logic or UI, and retain Streamlit as a
+switchable demo source within the existing three-App topology. The
+implementation must keep `agent_core` use-case-independent and preserve the
+verified Agent App, MCP, Unity Catalog, DeepSeek, OAuth, and two-endpoint
+architecture from Sprint 1.
 
 ## Version and Architecture Baseline
 
@@ -74,31 +77,23 @@ DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
   preserving the Sprint 2 event contract and Sprint 3 conversation data.
   Sprint 4 implementation is deployed on Node; Sprint 4b completed the
   production-runtime, authenticated verification, rollback, and cutover gates.
-- [ ] **Milestone 8:** Run offline MLflow evaluation, establish quality gates,
+- [ ] **Milestone 8:** Consolidate Agent, MCP facade, React, and Streamlit demo
+  sources under `ecommerce_agent/apps/` using a path-only refactor with
+  unchanged logic, UI, deployment resources, and service contracts.
+- [ ] **Milestone 9:** Run offline MLflow evaluation, establish quality gates,
   and productionize observability and CI/CD.
 
 ## Active Sprints
 
-- [Sprint 2](sprint-plans/sprint-2.md) — planned next: Responses API token
-  streaming, tool-use timeline, safe progress visualization, and temporary
-  Streamlit rendering.
-- [Sprint 3](sprint-plans/sprint-3.md) — Lakebase-backed per-user session
-  history and bounded-history replay; its closeout is superseded by the
-  required hardening work below.
-- [Sprint 3b](sprint-plans/sprint-3b.md) — active: remediate persistence,
-  identity, migration, stream-lifecycle, deployment, and verification defects
-  before React consumes the Sprint 3 service boundary.
-- [Sprint 4](sprint-plans/sprint-4.md) — React/Node implementation and initial
-  Databricks deployment; final cutover remains gated by Sprint 4b.
-- [Sprint 4b](sprint-plans/sprint-4b.md) — active: fix live React serving,
-  readiness, persistence, streaming, cancellation, and shutdown defects;
-  complete PostgreSQL and authenticated browser evidence; prove rollback; then
-  remove Streamlit and close the migration.
+- [Sprint 5](sprint-plans/sprint-5.md) — active: move Agent, MCP facade, React,
+  and a maintained Streamlit demo source under `ecommerce_agent/apps/` with
+  path-only changes and full local, integration, deployment, and browser
+  invariance certification.
 
 Execution dependency: Sprint 2 event contract -> Sprint 3 canonical persisted
-conversation items -> Sprint 4 React consumer -> Sprint 4b production cutover.
-No Sprint 3, Sprint 4, or Sprint 4b task may invent a second incompatible agent
-event schema.
+conversation items -> Sprint 4 React consumer -> Sprint 4b production cutover
+-> Sprint 5 source-layout consolidation. Sprint 5 must preserve the existing
+event, persistence, identity, UI, and deployment contracts.
 
 ## Documentation and Certification Index
 
@@ -113,6 +108,20 @@ event schema.
   Databricks Apps/ResponsesAgent vertical slice, governed tools, source-backed
   rules and skills, two-endpoint deployment, certification labs, DeepSeek
   boundary, OAuth Apps, and credentialed smokes are complete.
+- [Sprint 2](sprint-plans/sprint-2.md) — completed. Responses API token
+  streaming, tool-use timeline, safe progress visualization, and robust SSE
+  handling were delivered in the temporary Streamlit client.
+- [Sprint 3](sprint-plans/sprint-3.md) — completed. Lakebase-backed,
+  owner-scoped conversation history and bounded replay were delivered.
+- [Sprint 3b](sprint-plans/sprint-3b.md) — completed 2026-07-24. Persistence,
+  identity, migration, stream lifecycle, payload safety, deployment, and real
+  PostgreSQL/browser hardening gates passed.
+- [Sprint 4](sprint-plans/sprint-4.md) — completed 2026-07-24. The React/Node
+  Chat UI, server adaptation, production build, tests, and deployment were
+  delivered.
+- [Sprint 4b](sprint-plans/sprint-4b.md) — completed 2026-07-24. Production
+  serving, readiness, streaming, cancellation, graceful shutdown, authenticated
+  browser parity, rollback, and React cutover gates passed.
 
 ## Backlog / Future Work
 
