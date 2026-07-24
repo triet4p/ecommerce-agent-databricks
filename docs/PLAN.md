@@ -65,13 +65,15 @@ DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
 - [x] **Milestone 4:** Complete current certification labs for UC functions,
   MCP, Apps, MLflow/pyfunc, Model Serving, Vector Search, prompt lifecycle,
   evaluation, governance, and AI Gateway.
-- [ ] **Milestone 5:** Deliver real token streaming, tool-use visualization,
+- [x] **Milestone 5:** Deliver real token streaming, tool-use visualization,
   safe progress visualization, and robust SSE error handling in the temporary
   Streamlit client.
-- [ ] **Milestone 6:** Persist isolated per-user conversation sessions in
+- [x] **Milestone 6:** Persist isolated per-user conversation sessions in
   Lakebase and replay the complete bounded session history on every agent turn.
-- [ ] **Milestone 7:** Replace Streamlit with a tested React chat UI while
+- [x] **Milestone 7:** Replace Streamlit with a tested React chat UI while
   preserving the Sprint 2 event contract and Sprint 3 conversation data.
+  Sprint 4 implementation is deployed on Node; Sprint 4b completed the
+  production-runtime, authenticated verification, rollback, and cutover gates.
 - [ ] **Milestone 8:** Run offline MLflow evaluation, establish quality gates,
   and productionize observability and CI/CD.
 
@@ -86,13 +88,17 @@ DeepSeek, OAuth, and two-endpoint architecture from Sprint 1.
 - [Sprint 3b](sprint-plans/sprint-3b.md) — active: remediate persistence,
   identity, migration, stream-lifecycle, deployment, and verification defects
   before React consumes the Sprint 3 service boundary.
-- [Sprint 4](sprint-plans/sprint-4.md) — queued after Sprint 3: migrate the Chat
-  UI App from Streamlit to React using the official Databricks chat template as
-  the baseline.
+- [Sprint 4](sprint-plans/sprint-4.md) — React/Node implementation and initial
+  Databricks deployment; final cutover remains gated by Sprint 4b.
+- [Sprint 4b](sprint-plans/sprint-4b.md) — active: fix live React serving,
+  readiness, persistence, streaming, cancellation, and shutdown defects;
+  complete PostgreSQL and authenticated browser evidence; prove rollback; then
+  remove Streamlit and close the migration.
 
 Execution dependency: Sprint 2 event contract -> Sprint 3 canonical persisted
-conversation items -> Sprint 4 React consumer. No Sprint 3 or Sprint 4 task may
-invent a second incompatible agent event schema.
+conversation items -> Sprint 4 React consumer -> Sprint 4b production cutover.
+No Sprint 3, Sprint 4, or Sprint 4b task may invent a second incompatible agent
+event schema.
 
 ## Documentation and Certification Index
 

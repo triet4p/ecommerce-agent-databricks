@@ -102,3 +102,24 @@ A chronological log of *why* key choices were made in this project.
 **Alternatives considered:** Keep `databricks-meta-llama-3-3-70b-instruct` as the App model, choose an unverified preconfigured Foundation Model endpoint, or create another Agent Model Serving endpoint.
 **Reason:** The deployed Foundation endpoint returned a deterministic `400` that Responses API passthrough is unsupported, while the existing DeepSeek singleton has passed streaming, tool-call, reasoning replay, and two-turn `ChatDatabricks` contracts. The user approved using the existing quota-bound resources and accepts the cost envelope.
 **Consequences:** No third endpoint is created and the App remains on Databricks Apps. The DeepSeek adapter remains isolated from App/core imports, but every App smoke now exercises the actual Responses-compatible model boundary; endpoint feature limitations for AI Gateway remain documented separately.
+
+## [2026-07-23] Readiness requires both Lakebase and Agent availability
+
+**Decision:** The Chat UI readiness endpoint returns healthy only when it can query Lakebase and the configured Agent App health endpoint succeeds.
+**Alternatives considered:** Report healthy when Lakebase alone succeeds, or only resolve the Agent URL without probing its runtime.
+**Reason:** The Chat UI cannot serve a complete chat turn without both dependencies, and control-plane URL resolution does not prove the Agent process is responsive.
+**Consequences:** The Agent App exposes a lightweight `/api/health` route, Chat UI readiness returns HTTP 503 for either dependency failure, and deployments must verify both dependency fields.
+
+## [2026-07-23] Cancellation owns the terminal state of an active turn
+
+**Decision:** Browser Stop, the cancel endpoint, and client disconnect share one cancellation promise and abort controller; once cancellation wins, the stream must not race into a failed terminal state.
+**Alternatives considered:** Let every path independently update the turn, or treat a disconnected client as an upstream failure.
+**Reason:** Independent lifecycle writers produced duplicate cancellation calls and nondeterministic `failed` versus `cancelled` results.
+**Consequences:** Active streams are registered by turn, cancellation is idempotent, disconnects request cancellation, upstream aborts are coordinated, and failure persistence is skipped after cancellation.
+
+## [2026-07-24] Use an immutable React snapshot for Chat UI rollback
+
+**Decision:** Roll back the production Chat UI only to a verified immutable React snapshot that uses the current trusted identity and Lakebase schema; retained Streamlit artifacts are evidence only, not rollback candidates.
+**Alternatives considered:** Roll back to the latest flattened Streamlit snapshot, use the latest self-contained Streamlit snapshot, or reconstruct and retain a current-source Streamlit deployment.
+**Reason:** Live rollback testing proved the flattened snapshot fails its package imports, while the self-contained snapshot predates the trusted owner key and cannot read React-created conversations. Maintaining a second Streamlit runtime would also restore the dependency and operational surface removed at cutover.
+**Consequences:** Release evidence must record a compatible React deployment ID and verify existing/post-cutover history before restore. Reintroducing Streamlit as a production rollback path requires an explicit new migration decision and full identity/schema/browser certification.

@@ -400,3 +400,161 @@ if not logger.handlers:
 ```
 
 **Watch out for:** Every new Python module that uses `logger.info()` in a Databricks App must repeat this configuration. Simply calling `logging.getLogger(__name__)` is insufficient.
+
+## [2026-07-23] Bundle deployment leaves a Databricks App on its previous runtime snapshot
+
+**Symptom:** `databricks bundle deploy` validated and uploaded a new Node source tree, but the live App continued to start with `streamlit run app.py`.
+**Root cause:** Bundle deployment synchronizes source and resource configuration; it does not create a new App deployment snapshot. `databricks apps start` also starts the existing active snapshot.
+**Fix / workaround:** After `databricks bundle deploy`, run `databricks bundle run <app-resource-key> -t <target>`. Verify `active_deployment.source_code_path` and the startup command in App logs.
+**Watch out for:** A Bundle "Deployment complete" message is not evidence that an App is running the newly synchronized source.
+
+## [2026-07-23] Databricks Node Apps require explicit OAuth and Lakebase credential handling
+
+**Symptom:** The React server started but could neither authenticate to the Agent App nor connect to Lakebase.
+**Root cause:** The runtime injects `DATABRICKS_CLIENT_ID`/`DATABRICKS_CLIENT_SECRET`, not a ready `DATABRICKS_TOKEN`; it may inject `DATABRICKS_HOST` without an URL scheme. Lakebase supplies `PG*` connection fields but no password.
+**Fix / workaround:** Normalize the workspace host to HTTPS, obtain and cache an OAuth M2M token from `/oidc/v1/token`, generate a short-lived database credential from `/api/2.0/postgres/credentials`, and use an async `pg` password callback with bounded connection lifetime.
+**Watch out for:** A successful static React response proves neither App-to-App OAuth nor Lakebase connectivity. Run authenticated `/api/health` and CRUD smokes.
+
+## [2026-07-23] Conversation schema code at v2 does not mean the live Lakebase schema migrated
+
+**Symptom:** Completed Node turns rolled back with `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+**Root cause:** The repository contained migration v2, but live `_schema_version` was still 1 and lacked `items_turn_key_unique`; 91 legacy items still had null keys.
+**Fix / workaround:** Inspect `_schema_version` and live constraints before cutover. Run the exact v2 migration transactionally under an advisory lock using the Chat UI App service principal that owns the schema, then verify the version and constraints.
+**Watch out for:** Unit migration tests and checked-in DDL are not deployment evidence. A replacement runtime must still execute forward migrations.
+
+## [2026-07-23] Production agent stream omitted the documented terminal completion event
+
+**Symptom:** Live streams returned text delta, output item, then `[DONE]`; every otherwise successful turn was marked failed and history was not persisted.
+**Root cause:** `CoreAgent.predict_stream()` never emitted `response.completed`. Handler tests used fake agents that emitted it themselves, so the production omission was not covered.
+**Fix / workaround:** Emit a valid `ResponsesAgentStreamEvent(type="response.completed", response={id, status, output})` only after successful stream flushing and operation-gate verification, and add a test against the real `CoreAgent.predict_stream()` path.
+**Watch out for:** Mock adapter tests can validate serialization while missing terminal events in the production generator. Verify live event type order.
+
+## [2026-07-23] Databricks SDK deployment waiter requires a timedelta timeout
+
+**Symptom:** A Chat UI snapshot upload succeeded and the deployment was created, but waiting for it raised `AttributeError: 'int' object has no attribute 'total_seconds'`.
+**Root cause:** This SDK version accepts a `datetime.timedelta` timeout for the deployment waiter, not a raw integer, even though the surrounding deployment request is valid.
+**Fix / workaround:** Pass `timedelta(minutes=12)` to `.result(timeout=...)`, or poll `apps.get_deployment` after submission. Verify the new deployment becomes `SUCCEEDED` and active before reporting it.
+**Watch out for:** The local waiter exception can occur after the remote deployment has already started; inspect `list_deployments` before submitting another snapshot.
+
+## [2026-07-23] A RUNNING Node Databricks App can still return 404 at the root
+
+**Symptom:** The Chat UI deployment reported `RUNNING`, and Node started successfully, but `/` returned 404.
+**Root cause:** Static client serving was conditional on `NODE_ENV=production`; Databricks Apps did not infer that value from the production start command.
+**Fix / workaround:** Use an app-specific `APP_RUNTIME=production` signal for static serving, build the client into the expected `dist` path, and verify the authenticated root URL rather than relying on control-plane status.
+**Watch out for:** Setting `NODE_ENV=production` in `app.yaml` also affects the Databricks build phase, causing npm to omit TypeScript/Vite development dependencies and fail with `tsc: not found`.
+
+## [2026-07-23] Psycopg async integration tests on Windows need the selector event loop
+
+**Symptom:** Real PostgreSQL integration tests timed out while opening the async connection pool and emitted Proactor transport warnings.
+**Root cause:** Psycopg's async transport is incompatible with the default Windows Proactor event loop in this test path.
+**Fix / workaround:** Apply `asyncio.WindowsSelectorEventLoopPolicy()` only in the credential-gated PostgreSQL integration test process.
+**Watch out for:** Do not change the application's global event-loop policy merely to accommodate a Windows test runner.
+
+## [2026-07-23] A cloned Lakebase branch preserves database ownership
+
+**Symptom:** The integration principal could connect to a temporary cloned branch but could not drop or recreate the application-owned schema.
+**Root cause:** Branch cloning preserved the schema owner from production; the developer principal was not the owner.
+**Fix / workaround:** Create an empty, short-lived database in the TTL branch owned by the test principal, run migrations and destructive isolation checks there, then delete the branch.
+**Watch out for:** Never change production-like schema ownership or grants just to make an integration test pass.
+
+## [2026-07-23] An npm start wrapper can swallow Databricks Apps SIGTERM
+
+**Symptom:** The Express server implemented bounded shutdown and `process.exit`, but every redeploy still logged `App did not respect SIGTERM timeout of 15 seconds`.
+**Root cause:** `app.yaml` launched `npm run start`; the Databricks signal reached the npm parent process rather than the Node child that owned the shutdown handlers.
+**Fix / workaround:** Start the compiled server directly with `node server/dist/index.js` so Node is the app process and receives SIGTERM.
+**Watch out for:** A correct application-level shutdown handler cannot help when a process wrapper does not forward the platform signal.
+
+## [2026-07-23] A new conversation opened in a permanent streaming state
+
+**Symptom:** A freshly created React conversation showed only the Stop button; Enter left the message in the composer and could not start a turn.
+**Root cause:** `createInitialStreamState()` correctly defaults to an active stream for reducer processing, but `useChat` also used that default for its idle initial and conversation-reset states.
+**Fix / workaround:** Let `createInitialStreamState(isStreaming)` accept an explicit lifecycle value and initialize/reset `useChat` with `false`; keep active send/reducer paths at the default `true`.
+**Watch out for:** Reducer initial state and UI idle state are different lifecycle states. Browser-test the composer before assuming a component test with a manually supplied `isStreaming={false}` covers hook integration.
+
+## [2026-07-23] The Chat UI proxy must own the downstream DONE sentinel
+
+**Symptom:** A blindly proxied upstream sentinel could let the browser terminate before the server had made its terminal persistence decision.
+**Root cause:** The proxy forwarded upstream chunks, including `[DONE]`, before parsing all events and persisting the completed turn.
+**Fix / workaround:** Make the Chat UI proxy consume and suppress upstream sentinels, keep reading terminal metadata, persist the turn, then emit exactly one downstream `[DONE]`. The browser safely finishes on that proxy-owned sentinel and surfaces an incomplete-stream error if it arrives without completion.
+**Watch out for:** Do not blindly forward an upstream `[DONE]`; termination ordering is part of the proxy contract.
+
+## [2026-07-23] A terminal text response retained the active composing label
+
+**Symptom:** A completed live response had already switched from Stop to Send and was persisted, but still displayed “🤖 Composing…”.
+**Root cause:** The `response.completed` reducer recomputed the phase label with `hasTextDelta=true`; the display policy correctly interpreted that as an active composing phase even though `isStreaming=false`.
+**Fix / workaround:** Terminal completion must derive its phase with no active text delta. Preserve “✅ Tool complete” only when completed tool results exist; otherwise clear the phase label.
+**Watch out for:** Test terminal visual state independently from lifecycle booleans; a correct `isStreaming=false` can still expose a misleading active phase label.
+
+## [2026-07-23] Create-turn failures had no assistant message to render the error
+
+**Symptom:** An oversized live request correctly produced a failed stream state and Retry button, but the conversation showed only the user message and no explanation.
+**Root cause:** `useChat` appended the assistant placeholder only after `createTurn()` succeeded. Its catch path updated stream state, while `ChatPage` attaches that state only to the last assistant message.
+**Fix / workaround:** On a pre-stream failure, append an assistant error message; if an assistant placeholder already exists, update it instead. Retry removes that error assistant and reuses the existing user message.
+**Watch out for:** Exercise failures before and after assistant-placeholder creation; a global error flag is not visible unless the component tree has a node that renders it.
+
+## [2026-07-24] LangGraph messages mode streamed tool-result JSON as assistant text
+
+**Symptom:** A governed tool card rendered correctly, but the final assistant
+answer began with the raw JSON tool result; after reload, the JSON could appear
+as a separate assistant bubble and enter replay history.
+**Root cause:** LangGraph `stream_mode="messages"` emits `ToolMessageChunk`
+objects as well as `AIMessageChunk` objects. The Agent converted every chunk
+with content into `response.output_text.delta`, and the resulting aggregated
+message was persisted.
+**Fix / workaround:** Emit visible deltas only for `AIMessageChunk`. Keep tool
+results in `function_call_output` items, and filter legacy JSON-only assistant
+echoes from replay and React history hydration when the same turn has tool
+provenance.
+**Watch out for:** A correct tool card does not prove the assistant text is
+clean. Verify live output, persisted items, reload hydration, and the next-turn
+replay after every LangGraph/MLflow streaming change.
+
+## [2026-07-24] Scale-to-zero retriever cold starts can consume the Apps request budget
+
+**Symptom:** The React UI showed tool progress, then failed with `Stream read
+error`; Chat UI aborted near 110 seconds and Agent logs later reported
+`search-and-rerank-endpoint timed out after 60s`.
+**Root cause:** Databricks Apps enforces a 120-second request limit, the workspace
+requires custom serving endpoints to enable scale-to-zero, and the former
+two-attempt 60-second retriever policy could not fit alongside model/tool-loop
+latency.
+**Fix / workaround:** Use a single 45-second retrieval attempt and start a
+bounded Agent App daemon worker that performs a harmless top-1 lookup at startup
+and every 15 minutes. The worker stops within the App shutdown budget and
+contains warm-up failures without crashing readiness.
+**Watch out for:** Keeping the endpoint warm can increase serving cost. If the
+interval changes, prove a policy-search turn still finishes below the proxy
+limit after an idle period and document the ongoing compute tradeoff.
+
+## [2026-07-24] Current Agent runtime lifecycle and signal APIs differ from older examples
+
+**Symptom:** A deployed Agent crashed because `FastAPI.add_event_handler` did
+not exist, and an earlier redeploy logged `App did not respect SIGTERM timeout
+of 15 seconds`.
+**Root cause:** The locked FastAPI runtime exposes startup/shutdown handler lists
+on `app.router`, while the App command used `sh -c uv run ...` without replacing
+the shell process.
+**Fix / workaround:** Register lifecycle callbacks with
+`app.router.on_startup/on_shutdown.append(...)` and launch with
+`sh -c "exec uv run ..."` so Uvicorn receives SIGTERM. A live redeploy then
+logged shutdown start, completion, and process exit in the same second.
+**Watch out for:** Static FastAPI examples and a successful startup do not prove
+the deployed version's lifecycle API or signal delivery. Verify both by
+redeploying the exact command twice and inspecting runtime logs.
+
+## [2026-07-24] A RUNNING Streamlit snapshot can still be an invalid rollback
+
+**Symptom:** Databricks reported successful Streamlit deployments, but one
+failed on first browser execution with `ModuleNotFoundError: apps`; another
+streamed a new response yet could not list the existing React conversation.
+**Root cause:** The newer artifact flattened files that still used
+package-qualified imports. The older self-contained artifact used the
+pre-hardening owner identity, so its Lakebase view did not match current
+trusted-owner records.
+**Fix / workaround:** Exercise rollback through the authenticated browser, not
+only deployment status. Disqualify both Streamlit artifacts and certify the
+previous immutable React snapshot against pre- and post-cutover history before
+restoring the current React snapshot.
+**Watch out for:** Process startup, a successful new turn, and schema migration
+are separate from identity-compatible history. A rollback is valid only when
+the same user can read existing conversations and newly persisted data.

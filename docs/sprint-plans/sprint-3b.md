@@ -20,7 +20,7 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   version verification transactional on one session connection.
 - [x] **S3B-04:** Make conversation turn creation atomic, owner-scoped,
   idempotent, and concurrency-safe.
-- [~] **S3B-05:** Make complete/fail/cancel transitions owner-scoped,
+- [x] **S3B-05:** Make complete/fail/cancel transitions owner-scoped,
   idempotent, state-checked, transaction-safe, and item-key deduplicated.
 - [x] **S3B-06:** Enforce soft deletion and prevent all access or mutation of a
   deleted conversation.
@@ -28,17 +28,20 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   JSON-string fields, and enforce item-count and payload limits.
 - [x] **S3B-08:** Define/revise replay provenance contract: canonical tool
   audit records, message-only model history, no JSON-text heuristic.
-- [ ] **S3B-09:** Build the React-server-compatible stream lifecycle boundary:
+- [x] **S3B-09:** Build the React-server-compatible stream lifecycle boundary:
   terminal completion only, terminal failures/cancellations, typed context
   overflow, trace persistence, and metadata-only logging.
-- [~] **S3B-10:** Package the conversation module with the Chat App; remove
+- [x] **S3B-10:** Package the conversation module with the Chat App; remove
   personal hard-coded deployment values; make verification schema read-only;
   standardize database naming and assess Lakebase cost policy.
-- [ ] **S3B-11:** Add isolated PostgreSQL integration coverage for migrations,
+- [x] **S3B-11:** Add isolated PostgreSQL integration coverage for migrations,
   constraints, concurrency, retries, isolation, deletion, and redaction.
-- [ ] **S3B-12:** Add stream lifecycle and security persistence tests, then run
-  a real React-server-to-Agent-App E2E test.
-- [ ] **S3B-13:** Resolve Ruff findings and update Sprint 3 status, closeout,
+- [x] **S3B-12:** Add stream lifecycle and security persistence tests, then run
+  a real React-server-to-Agent-App E2E test. The authenticated server-to-Agent
+  stream, terminal persistence, history reload, trace, cleanup, and real
+  logged-in browser pass. Second-browser identity isolation is owner-deferred;
+  deterministic owner isolation remains covered.
+- [x] **S3B-13:** Resolve Ruff findings and update Sprint 3 status, closeout,
   F8/F9/F10 evidence, replay contract, naming documentation, and superseded
   lessons.
 

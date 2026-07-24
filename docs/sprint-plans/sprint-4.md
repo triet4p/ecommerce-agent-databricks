@@ -59,95 +59,99 @@ Status legend: [ ] pending / [~] in progress / [x] done
 
 ### A. Baseline and migration contract
 
-- [ ] **S4-A1:** Pin the exact official Databricks chat-template revision used as
+- [x] **S4-A1:** Pin the exact official Databricks chat-template revision used as
   the migration baseline and record its license and notices.
-- [ ] **S4-A2:** Inventory template features and map each one to keep, adapt,
+- [x] **S4-A2:** Inventory template features and map each one to keep, adapt,
   defer, or remove for this repository.
-- [ ] **S4-A3:** Verify the template's current support path for an agent deployed
+- [x] **S4-A3:** Verify the template's current support path for an agent deployed
   on Databricks Apps rather than a legacy Agent Model Serving endpoint.
-- [ ] **S4-A4:** Define the same-origin browser API exposed by the Chat UI server
+- [x] **S4-A4:** Define the same-origin browser API exposed by the Chat UI server
   for conversations, turns, streaming, feedback capability, and health.
-- [ ] **S4-A5:** Freeze the TypeScript types generated or hand-mapped from the
+- [x] **S4-A5:** Freeze the TypeScript types generated or hand-mapped from the
   Sprint 2 event contract and Sprint 3 conversation contract.
-- [ ] **S4-A6:** Define the cutover, rollback, and database compatibility plan for
+- [x] **S4-A6:** Define the cutover, rollback, and database compatibility plan for
   the existing `ecommerce-agent-chat-ui` App.
 
 ### B. Scaffold the React application
 
-- [ ] **S4-B1:** Add the root Node package manifest and lockfile needed by the
+- [x] **S4-B1:** Add the root Node package manifest and lockfile needed by the
   selected official template revision.
-- [ ] **S4-B2:** Add the React application shell, routing, error boundary, and
+- [x] **S4-B2:** Add the React application shell, routing, error boundary, and
   global styling without business logic.
-- [ ] **S4-B3:** Add a typed API client that calls only same-origin Chat UI server
+- [x] **S4-B3:** Add a typed API client that calls only same-origin Chat UI server
   endpoints.
-- [ ] **S4-B4:** Add a pure event reducer for text deltas, completed messages,
+- [x] **S4-B4:** Add a pure event reducer for text deltas, completed messages,
   function calls, function outputs, progress, errors, and completion.
-- [ ] **S4-B5:** Add a conversation state store keyed by canonical conversation
+- [x] **S4-B5:** Add a conversation state store keyed by canonical conversation
   and turn IDs.
-- [ ] **S4-B6:** Add markdown rendering with an explicit safe rendering policy.
-- [ ] **S4-B7:** Add accessible base components for message, composer, sidebar,
+- [x] **S4-B6:** Add markdown rendering with an explicit safe rendering policy.
+- [x] **S4-B7:** Add accessible base components for message, composer, sidebar,
   dialog, status, alert, and loading states.
 
 ### C. Adapt the Chat UI server
 
-- [ ] **S4-C1:** Implement authenticated end-user extraction from trusted
+- [x] **S4-C1:** Implement authenticated end-user extraction from trusted
   Databricks forwarded headers on every conversation route.
-- [ ] **S4-C2:** Adapt the Sprint 3 conversation repository to the server runtime
+- [x] **S4-C2:** Adapt the Sprint 3 conversation repository to the server runtime
   without changing persisted semantics.
-- [ ] **S4-C3:** Implement the server-side App-to-App OAuth client for the Agent
+- [x] **S4-C3:** Implement the server-side App-to-App OAuth client for the Agent
   App without forwarding its token to the browser.
-- [ ] **S4-C4:** Implement the streaming proxy with backpressure, cancellation,
+- [x] **S4-C4:** Implement the streaming proxy with backpressure, cancellation,
   timeout, `[DONE]`, and terminal error propagation.
-- [ ] **S4-C5:** Implement idempotent turn submission using the Sprint 3 client
+- [x] **S4-C5:** Implement idempotent turn submission using the Sprint 3 client
   request ID contract.
-- [ ] **S4-C6:** Serve the production React build and API from the Databricks App
+- [x] **S4-C6:** Serve the production React build and API from the Databricks App
   command defined by the selected template topology.
-- [ ] **S4-C7:** Add health checks for App readiness, Lakebase connectivity, and
+- [x] **S4-C7:** Add health checks for App readiness, Lakebase connectivity, and
   Agent App reachability without exposing resource details.
 
 ### D. Implement the conversational UX
 
-- [ ] **S4-D1:** Render session history and stream new assistant text without a
+- [x] **S4-D1:** Render session history and stream new assistant text without a
   page reload.
-- [ ] **S4-D2:** Render one expandable tool card per correlated call/result pair.
-- [ ] **S4-D3:** Render derived analyzing/querying/composing states without raw
+- [x] **S4-D2:** Render one expandable tool card per correlated call/result pair.
+- [x] **S4-D3:** Render derived analyzing/querying/composing states without raw
   provider reasoning.
-- [ ] **S4-D4:** Add stop/cancel behavior that terminates the browser stream and
+- [x] **S4-D4:** Add stop/cancel behavior that terminates the browser stream and
   leaves the turn in the Sprint 3-consistent state.
-- [ ] **S4-D5:** Add retry behavior that reuses idempotency rules and never
+- [x] **S4-D5:** Add retry behavior that reuses idempotency rules and never
   duplicates a completed user turn.
-- [ ] **S4-D6:** Add create, list, open, rename, and delete conversation UX.
-- [ ] **S4-D7:** Add empty, ephemeral-capability, loading, timeout, unauthorized,
+- [x] **S4-D6:** Add create, list, open, rename, and delete conversation UX.
+- [x] **S4-D7:** Add empty, ephemeral-capability, loading, timeout, unauthorized,
   and unavailable-backend states.
-- [ ] **S4-D8:** Add responsive desktop and mobile layouts.
-- [ ] **S4-D9:** Add keyboard navigation, focus management, accessible labels,
+- [x] **S4-D8:** Add responsive desktop and mobile layouts.
+- [x] **S4-D9:** Add keyboard navigation, focus management, accessible labels,
   contrast checks, and reduced-motion support.
-- [ ] **S4-D10:** Add an optional developer-only trace link or trace ID display
+- [x] **S4-D10:** Add an optional developer-only trace link or trace ID display
   that is disabled for normal users.
 
 ### E. Verification and cutover
 
-- [ ] **S4-E1:** Add unit tests for the event reducer and duplicate suppression.
-- [ ] **S4-E2:** Add component tests for streamed markdown, tool cards, progress,
+- [x] **S4-E1:** Add unit tests for the event reducer and duplicate suppression.
+- [x] **S4-E2:** Add component tests for streamed markdown, tool cards, progress,
   errors, and conversation navigation.
-- [ ] **S4-E3:** Add server tests for trusted identity, OAuth proxying, history
+- [x] **S4-E3:** Add server tests for trusted identity, OAuth proxying, history
   authorization, cancellation, and terminal error propagation.
-- [ ] **S4-E4:** Add Playwright coverage for streaming text without reload.
-- [ ] **S4-E5:** Add Playwright coverage for tool use, history restoration,
-  rename/delete, user isolation, retry, and failed streams.
-- [ ] **S4-E6:** Run Node lint, typecheck, production build, unit tests, and
+- [x] **S4-E4:** Add Playwright/component coverage and authenticated browser
+  evidence for streaming text without reload.
+- [x] **S4-E5:** Add Playwright/component coverage and authenticated browser
+  evidence for tool use, history restoration, rename/delete, retry, and failed
+  streams. Cross-user browser isolation is owner-deferred and remains covered
+  at the repository/database boundary.
+- [x] **S4-E6:** Run Node lint, typecheck, production build, unit tests, and
   Playwright tests together with the existing Python checks.
-- [ ] **S4-E7:** Validate the development and production Bundle definitions with
+- [x] **S4-E7:** Validate the development and production Bundle definitions with
   the mixed Node/Python or selected Node runtime.
-- [ ] **S4-E8:** Deploy the development Chat UI App while preserving the Agent
+- [x] **S4-E8:** Deploy the development Chat UI App while preserving the Agent
   App, MCP facade, Lakebase data, and two Model Serving endpoints.
-- [ ] **S4-E9:** Run credentialed feature-parity smokes for streaming, tool use,
-  two-turn history, refresh, OAuth, and user isolation.
-- [ ] **S4-E10:** Exercise the documented rollback to the prior Chat UI source
+- [x] **S4-E9:** Run credentialed feature-parity smokes for streaming, tool use,
+  two-turn history, refresh, and OAuth. Cross-user browser isolation is
+  owner-deferred.
+- [x] **S4-E10:** Exercise the documented rollback to the prior Chat UI source
   without rolling back or corrupting Lakebase schema/data.
-- [ ] **S4-E11:** Remove Streamlit source and dependency only after S4-E9 and
+- [x] **S4-E11:** Remove Streamlit source and dependency only after S4-E9 and
   S4-E10 pass.
-- [ ] **S4-E12:** Update architecture diagrams, README, deployment instructions,
+- [x] **S4-E12:** Update architecture diagrams, README, deployment instructions,
   dependency checks, and the sprint closeout artifact.
 
 ## Official Databricks Documentation and Template
