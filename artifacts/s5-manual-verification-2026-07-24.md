@@ -1,13 +1,14 @@
 # Sprint 5 Manual Verification — 2026-07-24
 
-## Authentication and live baseline
+## Authentication and live artifacts
 
 - CLI profile: `Ecommerce-Agent`
 - Authenticated user: `trietlm0306@gmail.com`
 - Catalog: `ecommerce_agent`
-- Bundle commit: `201e1d04520ff991d469fc961d63bb34bb05ff9e`
-- Initial React deployment:
-  `01f18714e8061ccd96694f012ab53749`
+- Agent snapshot: `01f18727edd312acbb5389602bdf1467`
+- MCP facade smoke snapshot: `01f18728caa21948bde2f2f7e2106f69`
+- Streamlit switch snapshot: `01f18729fcae105bbd4fb503b7a47165`
+- Final React snapshot: `01f1872a4a8c15808ec6454f77068bb4`
 
 ## React browser parity
 
@@ -23,61 +24,60 @@ Conversation `0b74ece8-2b2c-40dc-89b5-26756e023c53`, renamed to
 - rename and delete flows;
 - desktop and 390-by-844 mobile behavior without horizontal overflow.
 
-Result: S5-17 passed.
+Result: S5-17 passed. Temporary parity conversations were soft-deleted; the
+existing `Sprint 4b polished chat` conversation was not modified.
 
-The two temporary verification conversations were soft-deleted after evidence
-collection; existing user conversation `Sprint 4b polished chat` was not
-modified.
+## Self-contained App artifacts
 
-## Streamlit switch
+`scripts/build_apps.py` generated four isolated roots:
 
-Commands:
+- `.build/apps/agent_app`
+- `.build/apps/mcp_facade`
+- `.build/apps/chat_ui`
+- `.build/apps/streamlit_chat_ui`
 
-```text
-databricks bundle deploy -t dev --profile Ecommerce-Agent --var chat_ui_source=ecommerce_agent
-databricks bundle run ecommerce_agent_chat_ui -t dev --profile Ecommerce-Agent --var chat_ui_source=ecommerce_agent
-```
+Artifact contract tests execute imports from each isolated source root, reject
+missing component inputs, verify manifest commands/resource bindings, and
+exclude tests, caches, `node_modules`, and other application sources.
 
-Deployment `01f18718040d132f88e1417b53d2b66c` reached `SUCCEEDED`,
-used source path `ecommerce_agent`, and started:
+The Agent deployed from its isolated artifact and started Uvicorn on
+`0.0.0.0:${DATABRICKS_APP_PORT}`. The MCP facade deployed from its isolated
+artifact, bound to `0.0.0.0`, and returned a successful authenticated MCP
+`initialize` response with an MCP session ID. MCP compute was then returned to
+its original `STOPPED` state.
 
-```text
-streamlit run apps/streamlit_chat_ui/app.py
-```
+## Streamlit switch and React restore
 
-Authenticated browser execution failed:
+The Chat UI resource was switched to
+`.build/apps/streamlit_chat_ui`. Authenticated browser verification proved:
 
-```text
-ModuleNotFoundError: No module named 'ecommerce_agent'
-```
+- trusted identity and Lakebase connectivity;
+- owner-scoped listing and hydration of `Sprint 4b polished chat`;
+- one new streamed turn with terminal output `Streamlit persistence OK`;
+- terminal-only persistence through the shared conversation service.
 
-The source root is flattened to the contents of `ecommerce_agent/`; the nested
-package name imported by `apps/streamlit_chat_ui/app.py` therefore does not
-exist. The build also emitted:
+The Chat UI resource was then restored to `.build/apps/chat_ui`. React listed
+and hydrated the Streamlit-created user/assistant messages exactly, proving
+cross-UI persistence. The temporary smoke conversation was deleted afterward.
 
-```text
-No dependencies file found. Skipping installation.
-```
+Final live state:
 
-`ecommerce_agent/requirements.txt` is absent; dependencies exist only at
-`ecommerce_agent/apps/streamlit_chat_ui/requirements.txt`.
+- Agent: `RUNNING / ACTIVE / SUCCEEDED`
+- Chat UI: React, `RUNNING / ACTIVE / SUCCEEDED`
+- MCP facade: `STOPPED` after successful protocol smoke
 
-Result: S5-09, S5-16, and S5-18 remain open.
+## Final gates
 
-## React restoration
+- Path/content invariant: `0 violations`, 19 reviewed new-file warnings.
+- Python: `394 passed`, `5 skipped`, 37 subtests; Ruff check/format and
+  compileall passed.
+- Node: build, typecheck, Biome, 14 component tests and 36 Playwright/server
+  tests passed; one isolated PostgreSQL test skipped by environment contract.
+- Bundle validation: dev React, prod React, and dev Streamlit override all
+  returned `Validation OK`.
 
-Commands:
-
-```text
-databricks bundle deploy -t dev --profile Ecommerce-Agent
-databricks bundle run ecommerce_agent_chat_ui -t dev --profile Ecommerce-Agent
-```
-
-Deployment `01f1871856bc198d8add093e495029b1` reached `SUCCEEDED`.
-Logs proved `node server/dist/index.js`, production static serving, and
-Lakebase schema v2. The pre-switch parity conversation reloaded with two user
-messages, two assistant messages, one persisted tool card, and one Markdown
-table.
-
-Final live state: React restored and healthy. Sprint 5 closeout remains open
-until the Streamlit blockers are fixed and the switch smoke is rerun.
+The validation commands were also run from a clean staging root containing the
+exact generated `.build/apps` tree. This avoided two sandbox-owned local pytest
+cache directories whose ACL prevented the Databricks CLI file walker from
+opening them; those directories are ignored and are not part of the source or
+deployment payload.

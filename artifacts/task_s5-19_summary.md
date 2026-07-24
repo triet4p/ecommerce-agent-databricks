@@ -1,89 +1,45 @@
-# Task Summary: S5-19 — Closeout Pending Manual Gates
+# Task Summary: S5-19 — Final Audit and Closeout
 
 **Sprint:** Sprint 5 — Source Layout Consolidation
 **Task:** S5-19
+**Status:** Complete
 
-## Summary of Work
+## Final audit
 
-The source-diff and local verification audit passed, but Sprint 5 is not closed.
-Authenticated React parity passed on 2026-07-24. The real Streamlit switch then
-exposed a flattened-source import failure and missing source-root dependency
-file, so S5-09, S5-16, S5-18, and this closeout remain open.
+- Four self-contained generated artifact roots, backed by three Databricks App
+  resources.
+- Root aggregate `app.yaml` and `ecommerce_agent/app.yaml` are absent; each
+  component owns its manifest and dependency inputs.
+- SHA-256/path invariant reports `0 violations`.
+- Generated artifacts exclude caches, tests, `node_modules`, and unrelated App
+  sources.
+- No secret or deploy-specific credential was added.
+- React is the active Chat UI after the certified Streamlit switch.
 
-## Final Diff Audit
-
-### Staged (rename-detected moves — 0 lines changed)
-- 71 files moved via `git mv` with 100% rename similarity
-- Three directory moves: `agent_app/`, `mcp_server/`→`mcp_facade/`, `chat_ui/`
-
-### Modified (path/import/manifest/doc only — 21 files)
-| Category | Files | Changes |
-|---|---|---|
-| App manifests | `app.yaml`, `databricks.yml` | Module commands, source paths, sync exclusions, `chat_ui_source` variable |
-| Test fixtures | 6 `tests/ecommerce_agent/*.py` | Import paths, fixture file paths |
-| Documentation | `CERTIFICATION_INDEX.md`, `chat-ui-event-contract.md`, `sprint-5.md` | Path references, task status |
-
-### New (Sprint 5 artifacts)
-| Category | Count | Description |
-|---|---|---|
-| Moved sources | 10 files | Agent app (5) + MCP facade (5) at new locations |
-| Restored Streamlit | 9 files | From commit `690f3bb`, under `streamlit_chat_ui/` |
-| Sprint tools | 3 files | Invariant checker, contract tests, package init |
-| Artifacts | 21 files | Task summaries, manifests, reports |
-
-### No changes to
-- Agent prompts, tools, retriever behavior, configuration values, model behavior
-- Database schema, SQL semantics, repository/service behavior
-- React markup, styling, component behavior, hooks, reducer, API semantics
-- OAuth, trusted identity, permissions, App names, resource topology
-- MCP protocol behavior, serving endpoint topology
-
-## Verification Artifacts
-
-| Evidence | File |
-|---|---|
-| SHA-256 baseline manifest | [artifacts/s5-01-baseline-manifest.sha256](artifacts/s5-01-baseline-manifest.sha256) |
-| Path-only invariant report | [artifacts/s5-02-invariant-report.txt](artifacts/s5-02-invariant-report.txt) |
-| Streamlit source map | [artifacts/s5-08-streamlit-source-map.md](artifacts/s5-08-streamlit-source-map.md) |
-| Task summaries (19) | [artifacts/task_s5-*_summary.md](artifacts/) |
-
-## Gate Results Summary
+## Gate results
 
 | Gate | Result |
 |---|---|
-| S5-03 Target layout tests | 24/24 passed |
-| S5-12 Structural audit | 6/6 checks passed |
-| S5-13 Python gates | 381 passed, 5 skipped; compileall clean; Ruff format clean |
-| S5-14 Node gates | 14/14 component tests; Biome clean; both builds pass |
-| S5-15 Persistence/bundle | 80/80 passed |
-| S5-16 Bundle validation | 4/4 configurations validated |
-| S5-17 React deployment/browser parity | Passed |
-| S5-18 Streamlit switch | Failed before initialization; React restored |
+| Python | 394 passed, 5 skipped, 37 subtests |
+| Ruff / format / compileall | Passed |
+| Node build / typecheck / Biome | Passed |
+| Node component tests | 14 passed |
+| Node Playwright/server tests | 36 passed, 1 environment skip |
+| Path/content invariant | 0 violations, 19 reviewed warnings |
+| Bundle validation | dev, prod, Streamlit override: `Validation OK` |
+| Agent deployment | `01f18727edd312acbb5389602bdf1467`, active |
+| MCP protocol smoke | `01f18728caa21948bde2f2f7e2106f69`, then stopped |
+| Streamlit switch | `01f18729fcae105bbd4fb503b7a47165`, passed |
+| React restore | `01f1872a4a8c15808ec6454f77068bb4`, active |
 
-## Sprint 5 Closeout Checklist
+## Browser evidence
 
-- [x] All application implementations under `ecommerce_agent/apps/`
-- [x] Target names: `agent_app/`, `mcp_facade/`, `chat_ui/`, `streamlit_chat_ui/`
-- [x] No old source directory or stale import remains
-- [x] Git diff is path-only except for approved import/manifest/doc lines
-- [x] Python gates pass (381 passed, 0 failed)
-- [x] Node gates pass (14/14 component tests, Biome clean, builds pass)
-- [x] Persistence and bundle contract tests pass (80/80)
-- [x] Dev and prod bundles validate (React default + Streamlit override)
-- [x] Exactly three Apps declared
-- [x] React is the active Chat UI after failed switch testing
-- [ ] Streamlit demo starts with the deployed flattened source root
-- [ ] Streamlit reads existing owner-scoped history
-- [ ] Streamlit completes and persists a new streamed turn
-- [ ] React restore reads both pre-switch and Streamlit-created history
+- React parity covers incremental streaming, tools, Markdown, replay/reload,
+  retry, cancel, error, rename, delete, and responsive layout.
+- Streamlit reads existing current-owner history and persists a new completed
+  turn.
+- Restored React reads the Streamlit-created history.
+- Temporary verification conversations were deleted.
 
-## Additional Notes
-
-- Tested React snapshot: `01f18714e8061ccd96694f012ab53749`.
-- Failed Streamlit snapshot: `01f18718040d132f88e1417b53d2b66c`.
-- Restored React snapshot: `01f1871856bc198d8add093e495029b1`.
-- Streamlit browser error:
-  `ModuleNotFoundError: No module named 'ecommerce_agent'`.
-- Streamlit build warning:
-  `No dependencies file found. Skipping installation`.
-- Pre-existing Ruff lint issues (133 warnings) are unchanged.
+Durable deployment quirks are appended to
+`.agents/memory/lessons-learned.md`.

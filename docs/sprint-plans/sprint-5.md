@@ -185,7 +185,7 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   source-to-target file map and content hashes. Do not fix imports, startup
   failures, behavior, or UI in this task.
 
-- [~] **S5-09 — Diagnose, then fix restored Streamlit compatibility:** First run
+- [x] **S5-09 — Diagnose, then fix restored Streamlit compatibility:** First run
   the restored `690f3bb` baseline and record its import, startup, test, and
   smoke failures. Fix those failures afterward using only import paths,
   dependency packaging, app manifest, current trusted identity/resource
@@ -224,7 +224,7 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   contract tests; verify no schema, SQL, event, owner key, or terminal-state
   behavior changed.
 
-- [~] **S5-16 — Validate every source configuration:** Strictly validate dev and
+- [x] **S5-16 — Validate every source configuration:** Strictly validate dev and
   prod with the default React source, validate the Streamlit demo override,
   inspect all packaged artifacts for expected paths and secret-free content,
   and prove no fourth App is planned.
@@ -236,13 +236,13 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   failed-stream handling, rename, and delete. Compare screenshots and relevant
   DOM/behavior evidence with S5-01.
 
-- [~] **S5-18 — Certify the Streamlit switch and React restore:** Record the
+- [x] **S5-18 — Certify the Streamlit switch and React restore:** Record the
   active React snapshot; deploy the Streamlit override to the same Chat UI App;
   verify trusted owner identity, existing history, and one new streamed turn;
   restore the exact React default source; then verify both pre-switch and
   Streamlit-created conversations remain usable.
 
-- [ ] **S5-19 — Complete the no-behavior-change audit and closeout:** Review the
+- [x] **S5-19 — Complete the no-behavior-change audit and closeout:** Review the
   final diff against the scope allowlist, record verification artifacts and
   snapshot IDs, update plan and durable lessons, and create focused
   Conventional Commits. Close Sprint 5 only with React active and every
@@ -290,26 +290,24 @@ Status legend: `[ ]` pending / `[~]` in progress / `[x]` done.
   delete, desktop layout, and 390-by-844 mobile layout without horizontal
   overflow.
 
-### S5-18 Streamlit switch — blocked; React restored
+### S5-18 Streamlit switch — passed; React restored
 
-- Streamlit snapshot `01f18718040d132f88e1417b53d2b66c` deployed
-  successfully from source path `ecommerce_agent` and started
-  `streamlit run apps/streamlit_chat_ui/app.py`.
-- The first authenticated browser execution failed with
-  `ModuleNotFoundError: No module named 'ecommerce_agent'` at the import from
-  `ecommerce_agent.apps.streamlit_chat_ui.app_oauth`.
-- The deployed source root is the contents of `ecommerce_agent/`, so no nested
-  `ecommerce_agent` package exists at runtime. The same source root also lacks
-  `ecommerce_agent/requirements.txt`; build logs reported
-  `No dependencies file found. Skipping installation` while the required file
-  currently exists only at
-  `apps/streamlit_chat_ui/requirements.txt`.
-- Existing history and a new Streamlit turn could not be tested because the
-  Streamlit script failed before initialization.
-- React was restored immediately in snapshot
-  `01f1871856bc198d8add093e495029b1`. Logs prove
-  `node server/dist/index.js`, production static serving, and Lakebase schema
-  v2. The pre-switch parity conversation reloaded with two user messages, two
-  assistant messages, one tool card, and one Markdown table.
-- S5-09, S5-16, and S5-18 remain in progress. S5-19 cannot close until the
-  Streamlit packaging/import blocker is fixed and the full switch smoke passes.
+- Generated Streamlit snapshot `01f18729fcae105bbd4fb503b7a47165`
+  deployed from `.build/apps/streamlit_chat_ui`.
+- Authenticated browser verification proved trusted identity, Lakebase
+  connectivity, owner-scoped listing and hydration of the existing
+  `Sprint 4b polished chat` conversation, and a completed streamed turn with
+  terminal output `Streamlit persistence OK`.
+- React was restored in snapshot
+  `01f1872a4a8c15808ec6454f77068bb4`. It listed and hydrated the
+  Streamlit-created user/assistant messages, proving cross-UI persistence. The
+  temporary smoke conversation was then deleted.
+- Agent snapshot `01f18727edd312acbb5389602bdf1467` and React are
+  `RUNNING / ACTIVE / SUCCEEDED`.
+- MCP snapshot `01f18728caa21948bde2f2f7e2106f69` passed an authenticated
+  protocol initialization smoke and was returned to `STOPPED`.
+- Final gates: 394 Python tests passed with 5 skipped; Ruff, format and
+  compileall passed; Node build/typecheck/Biome passed; 14 component and
+  36 Playwright/server tests passed with one environment skip; dev, prod and
+  Streamlit override bundle validation all returned `Validation OK`; invariant
+  report contains zero violations.

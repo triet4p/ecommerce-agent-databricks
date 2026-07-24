@@ -1,44 +1,31 @@
-# Task Summary: S5-09 — Diagnose and Fix Restored Streamlit Compatibility
+# Task Summary: S5-09 — Restore Streamlit Compatibility
 
 **Sprint:** Sprint 5 — Source Layout Consolidation
 **Task:** S5-09
+**Status:** Complete
 
-## Summary of Work
-Diagnosed the restored Streamlit baseline from S5-08 and fixed all 9 recorded
-failures. Every fix is a path, import, or dependency change only — no rendering,
-conversation logic, event semantics, persistence behavior, or identity policy was
-modified.
+## Result
 
-## Failure Inventory and Fixes
+The restored Streamlit UI now runs from the isolated flattened artifact
+`.build/apps/streamlit_chat_ui`.
 
-| # | Failure | Fix Applied |
-|---|---|---|
-| 1 | `ModuleNotFoundError: No module named 'apps'` (app.py:22) | `apps.chat_ui.app_oauth` → `ecommerce_agent.apps.streamlit_chat_ui.app_oauth` |
-| 2 | `from conversation.connection` broken (app.py:23) | → `ecommerce_agent.conversation.connection` |
-| 3 | `from conversation.identity` broken (app.py:24) | → `ecommerce_agent.conversation.identity` |
-| 4 | `from conversation.schema` broken (app.py:25) | → `ecommerce_agent.conversation.schema` |
-| 5 | `from conversation.service` broken (app.py:26) | → `ecommerce_agent.conversation.service` |
-| 6 | `from apps.chat_ui.display_policy` broken (app.py:27) | → `ecommerce_agent.apps.streamlit_chat_ui.display_policy` |
-| 7 | `from apps.chat_ui.sse_parser` broken (app.py:32) | → `ecommerce_agent.apps.streamlit_chat_ui.sse_parser` |
-| 8 | `from apps.chat_ui.stream_types` broken (app.py:33) | → `ecommerce_agent.apps.streamlit_chat_ui.stream_types` |
-| 9 | `streamlit` not in dependencies | Added `streamlit>=1.28.0` to requirements.txt |
-| — | `ecommerce_agent/app.yaml` command path | `streamlit run app.py` → `streamlit run apps/streamlit_chat_ui/app.py` |
+Certified fixes:
 
-## Files Modified
-- [ecommerce_agent/apps/streamlit_chat_ui/app.py](ecommerce_agent/apps/streamlit_chat_ui/app.py) — 8 import paths
-- [ecommerce_agent/apps/streamlit_chat_ui/requirements.txt](ecommerce_agent/apps/streamlit_chat_ui/requirements.txt) — added streamlit
-- [ecommerce_agent/app.yaml](ecommerce_agent/app.yaml) — command path
-- [tests/test_s5_03_target_layout.py](tests/test_s5_03_target_layout.py) — removed 4 xfail markers
+- component-owned `app.yaml` and `requirements.txt`;
+- source-root insertion before importing `apps.streamlit_chat_ui.*`;
+- flat artifact imports for the canonical `conversation` package;
+- dynamic Databricks App port/address;
+- `agent-app` and `conversation-store` resource bindings;
+- owner-scoped history listing and hydration through the shared conversation
+  service.
 
-## Testing
-- **Status:** 24/24 passed (all target-layout contracts verified)
-- **Execution Command:** `uv run pytest tests/test_s5_03_target_layout.py -v`
-- **Import verified:** `import ecommerce_agent.apps.streamlit_chat_ui.app` succeeds
+An authenticated deployment listed the existing React conversation, completed
+and persisted a new streamed turn, and was then restored to React. Restored
+React hydrated the Streamlit-created history.
 
-## Additional Notes
-- All fixes are strictly within Sprint 5 scope: import paths, dependencies, and
-  manifest commands. No rendering, conversation logic, event semantics,
-  persistence behavior, or identity policy was touched.
-- Streamlit generates expected warnings about `missing ScriptRunContext` and
-  `Lakebase unavailable` when imported outside `streamlit run` — these are
-  normal and not errors.
+## Verification
+
+- Streamlit snapshot: `01f18729fcae105bbd4fb503b7a47165`
+- Python suite: 394 passed, 5 skipped
+- Isolated artifact import/startup contracts: passed
+- Dev Streamlit bundle override: `Validation OK`

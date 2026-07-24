@@ -2,86 +2,38 @@
 
 **Sprint:** Sprint 5 — Source Layout Consolidation
 **Task:** S5-18
+**Status:** Complete
 
-## Summary of Work
+## Result
 
-Executed the Streamlit switch against the existing Chat UI App slot. The
-Streamlit deployment reached `SUCCEEDED`, but authenticated browser execution
-failed before application initialization because the flattened deployment root
-does not contain an importable `ecommerce_agent` package. React was restored
-and its pre-switch data was verified.
+The same `ecommerce-agent-chat-ui` resource was successfully switched from
+React to the self-contained Streamlit artifact and back to React.
 
-## React Snapshot (Pre-Switch Baseline)
+| Stage | Source | Snapshot | Result |
+|---|---|---|---|
+| Streamlit | `.build/apps/streamlit_chat_ui` | `01f18729fcae105bbd4fb503b7a47165` | Browser smoke passed |
+| React restore | `.build/apps/chat_ui` | `01f1872a4a8c15808ec6454f77068bb4` | Active and healthy |
 
-| Field | Value |
-|---|---|
-| App | ecommerce-agent-chat-ui |
-| Status | ACTIVE / SUCCEEDED |
-| Source | `ecommerce_agent/apps/chat_ui` (React) |
-| URL | https://ecommerce-agent-chat-ui-980720428762316.aws.databricksapps.com |
-| Agent App | ACTIVE / SUCCEEDED |
+Authenticated browser evidence proved that Streamlit listed and hydrated the
+existing owner-scoped `Sprint 4b polished chat` conversation. It then completed
+and persisted a new streamed turn whose terminal output was
+`Streamlit persistence OK`.
 
-- Pre-switch React deployment:
-  `01f18714e8061ccd96694f012ab53749`
-- Pre-switch parity conversation:
-  `0b74ece8-2b2c-40dc-89b5-26756e023c53`
+After restoring React, the React UI listed and hydrated that Streamlit-created
+user/assistant pair. The temporary smoke conversation was deleted after the
+cross-UI persistence check.
 
-## Streamlit Switch Procedure
+The final React App reports `RUNNING / ACTIVE / SUCCEEDED`, with the Agent App
+also `RUNNING / ACTIVE / SUCCEEDED`. MCP was independently deployed and
+protocol-smoked, then returned to `STOPPED`.
 
-### 1. Record React snapshot (done)
-Above table is the pre-switch baseline.
+## Compatibility fixes certified by the smoke
 
-### 2. Deploy Streamlit override — executed
-```bash
-databricks bundle deploy -t dev --profile Ecommerce-Agent \
-  --var chat_ui_source=ecommerce_agent
-```
-This switches the Chat UI resource to use `ecommerce_agent/app.yaml` which
-starts `streamlit run apps/streamlit_chat_ui/app.py`.
+- imports resolve from the flattened Streamlit source root;
+- the component owns its dependency and App manifest inputs;
+- `AGENT_APP_NAME` and `LAKEBASE_ENDPOINT` use App resource bindings;
+- Streamlit inserts the generated artifact root before importing `apps.*`;
+- existing current-owner history is hydrated through the canonical
+  conversation service.
 
-Streamlit deployment `01f18718040d132f88e1417b53d2b66c` used source path
-`ecommerce_agent` and started the expected command:
-`streamlit run apps/streamlit_chat_ui/app.py`.
-
-Authenticated browser verification failed immediately:
-
-```text
-ModuleNotFoundError: No module named 'ecommerce_agent'
-```
-
-The failing import is in `apps/streamlit_chat_ui/app.py`, which imports
-`ecommerce_agent.apps.streamlit_chat_ui...`. The deployment flattens the
-contents of `ecommerce_agent/` into the source root, so that package name is not
-available. Build logs also reported `No dependencies file found. Skipping
-installation` because `ecommerce_agent/requirements.txt` is absent while the
-Streamlit requirements file is nested under `apps/streamlit_chat_ui/`.
-
-Existing history, a new Streamlit turn, streaming, tool rendering, and
-Lakebase persistence remain unverified.
-
-### 4. Restore React default — executed
-```bash
-databricks bundle deploy -t dev --profile Ecommerce-Agent
-```
-(No `--var` needed — `chat_ui_source` defaults to `ecommerce_agent/apps/chat_ui`)
-
-React deployment `01f1871856bc198d8add093e495029b1` is active and
-`SUCCEEDED`. Logs prove `node server/dist/index.js`, production static serving,
-and Lakebase schema v2. The pre-switch parity conversation reloaded with two
-user messages, two assistant messages, one order tool card, and one Markdown
-table. No Streamlit-created conversation exists because Streamlit failed before
-initialization.
-
-## Notes
-
-- Bundle validation and local repository-root import checks did not model the
-  flattened App source root and therefore missed both blockers.
-- S5-09, S5-16, and S5-18 must remain open until imports and dependency
-  placement are corrected and the full authenticated switch smoke passes.
-- React is active, so the failed Streamlit test did not leave the demo service
-  unavailable.
-
-## Testing
-- **Status:** Streamlit switch executed and failed browser smoke; React restore
-  passed; task remains in progress
-- **React active at closeout:** ✓
+No fourth Databricks App was created.

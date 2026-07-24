@@ -558,3 +558,37 @@ restoring the current React snapshot.
 **Watch out for:** Process startup, a successful new turn, and schema migration
 are separate from identity-compatible history. A rollback is valid only when
 the same user can read existing conversations and newly persisted data.
+
+## [2026-07-24] Databricks App source preparation failed when an Agent artifact exposed both lock and requirements files
+
+**Symptom:** Agent deployments failed during Databricks source preparation with
+only `Unexpected error`, before dependency installation or the App command ran.
+The same self-contained artifact deployed successfully after its root
+`requirements.txt` was removed.
+**Root cause:** The failing artifact exposed both the repository `uv.lock` /
+`pyproject.toml` workflow and a second root dependency entry point. In this
+workspace's App builder, that mixed root dependency model failed before useful
+build logs were emitted.
+**Fix / workaround:** Package the Agent artifact with `pyproject.toml` and
+`uv.lock`, run `uv run --frozen`, and retain the component-specific
+`ecommerce_agent/apps/agent_app/requirements.txt` only as component metadata;
+do not copy it to the artifact root.
+**Watch out for:** A valid dependency file is not automatically safe to place
+at every flattened App source root. Test the exact generated artifact through a
+real deployment whenever changing its root dependency files.
+
+## [2026-07-24] Framework defaults made packaged Streamlit and MCP Apps locally reachable but externally unhealthy
+
+**Symptom:** Streamlit first failed to import the top-level `apps` package even
+though local repository imports passed, while the MCP facade started
+successfully but listened only on `127.0.0.1`.
+**Root cause:** Streamlit places the executed script directory, not the
+flattened artifact root, first on `sys.path`; FastMCP defaults its host to
+loopback. Both defaults differ from the Databricks App ingress contract.
+**Fix / workaround:** Insert the Streamlit artifact root derived from
+`Path(__file__)` before importing `apps.*`, and construct FastMCP with
+`host="0.0.0.0"` plus `port=int(DATABRICKS_APP_PORT)`. Contract-test both from
+the isolated generated artifact, not from the repository root.
+**Watch out for:** `RUNNING` and successful module import do not prove ingress
+reachability. Inspect the actual bind address and execute imports with the same
+script path and working directory used by the deployed runtime.
