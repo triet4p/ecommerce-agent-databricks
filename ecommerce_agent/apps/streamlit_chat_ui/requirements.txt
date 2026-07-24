@@ -1,0 +1,8 @@
+# Runtime dependencies for the Streamlit Chat UI app with conversation persistence.
+# streamlit: the Streamlit framework used for the chat interface.
+# psycopg[binary] + psycopg-pool: PostgreSQL async connection pool.
+# databricks-sdk >= 0.120.0: required for postgres.generate_database_credential().
+streamlit>=1.28.0
+psycopg[binary]>=3.2
+psycopg-pool>=3.2
+databricks-sdk>=0.120.0
