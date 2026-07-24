@@ -1,6 +1,12 @@
 .python-version
 
 .venv
+.pytest_cache/
+.pytest-cache-*/
+.ruff_cache/
+.uv-cache-*/
+.tmp-*/
+codex-tmp-*/
 
 **/*.pyc
 **/__pycache__/**

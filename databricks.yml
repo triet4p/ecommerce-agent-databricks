@@ -2,9 +2,10 @@ bundle:
   name: ecommerce-agent
 
 sync:
+  include:
+    - .build/apps/**
   exclude:
     - .agents/**
-    - .claude/**
     - .pytest_cache/**
     - .ruff_cache/**
     - .venv/**
@@ -12,10 +13,6 @@ sync:
     - docs/**
     - scripts/**
     - tests/**
-    - .build/**/node_modules/**
-    - .build/**/playwright-report/**
-    - .build/**/test-results/**
-    - .build/**/tests/**
 
 variables:
   app_name:

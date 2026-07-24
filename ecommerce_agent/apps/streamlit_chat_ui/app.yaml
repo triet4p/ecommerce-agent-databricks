@@ -1,5 +1,17 @@
-command: ["streamlit", "run", "app.py"]
+command:
+  - sh
+  - -c
+  - >-
+    exec streamlit run apps/streamlit_chat_ui/app.py
+    --server.port "${DATABRICKS_APP_PORT:-8000}"
+    --server.address 0.0.0.0
 
 env:
   - name: AGENT_APP_NAME
     valueFrom: agent-app
+  - name: LAKEBASE_ENDPOINT
+    valueFrom: conversation-store
+  - name: STREAMLIT_SERVER_ENABLE_CORS
+    value: "false"
+  - name: STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION
+    value: "false"

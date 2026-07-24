@@ -12,8 +12,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 import threading
 import uuid
+from pathlib import Path
+
+# Streamlit places the script directory, not the deployment root, at sys.path[0].
+# Add the flattened artifact root so the sibling ``apps`` and ``conversation``
+# packages resolve exactly as they do in the Databricks runtime.
+_SOURCE_ROOT = Path(__file__).resolve().parents[2]
+if str(_SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SOURCE_ROOT))
 
 import requests
 import streamlit as st
@@ -32,6 +41,7 @@ from apps.streamlit_chat_ui.display_policy import (
     sanitize_output,
     tool_display_name,
 )
+from apps.streamlit_chat_ui.history import hydrate_messages
 from apps.streamlit_chat_ui.sse_parser import JSONEventParser
 from apps.streamlit_chat_ui.stream_types import (
     ErrorEvent,
@@ -148,8 +158,33 @@ with st.sidebar:
     svc = st.session_state.get("conversation_service")
     if svc is None:
         st.caption("⚠️ Lakebase unavailable — session-only mode")
-    elif st.session_state.get("current_conv_id"):
-        st.caption(f"Active: {st.session_state.current_conv_id[:8]}...")
+    else:
+        try:
+            sidebar_user = _trusted_user()
+            conversations = _run_async(svc.list_conversations(sidebar_user))
+            for conversation in conversations:
+                if st.button(
+                    conversation.title,
+                    key=f"conversation-{conversation.id}",
+                    use_container_width=True,
+                ):
+                    _, items = _run_async(
+                        svc.get_conversation_with_items(
+                            conversation.id,
+                            sidebar_user,
+                        )
+                    )
+                    st.session_state.current_conv_id = str(conversation.id)
+                    st.session_state.messages = hydrate_messages(items)
+                    st.rerun()
+        except TrustedIdentityError as exc:
+            st.caption(f"⚠️ {exc}")
+        except Exception as exc:
+            logger.warning("Conversation history unavailable: %s", exc)
+            st.caption("⚠️ Conversation history unavailable")
+
+        if st.session_state.get("current_conv_id"):
+            st.caption(f"Active: {st.session_state.current_conv_id[:8]}...")
 
 # ---------------------------------------------------------------------------
 # Render existing messages from prior turns

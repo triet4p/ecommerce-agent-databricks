@@ -8,6 +8,8 @@ tooling.
 Uses OAuth app-to-app authentication.
 """
 
+import os
+
 import requests
 from databricks.sdk import WorkspaceClient
 from mcp.server.fastmcp import FastMCP
@@ -15,7 +17,11 @@ from mcp.server.fastmcp import FastMCP
 from app_oauth import resolve_agent_app_url
 from response_output import extract_response_text
 
-mcp = FastMCP("ecommerce-support-agent")
+mcp = FastMCP(
+    "ecommerce-support-agent",
+    host="0.0.0.0",
+    port=int(os.environ.get("DATABRICKS_APP_PORT", "8000")),
+)
 AGENT_REQUEST_TIMEOUT_SECONDS = 180
 
 

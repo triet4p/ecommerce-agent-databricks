@@ -1,6 +1,4 @@
-# This App uses the project-level uv.lock as its dependency source.
-# Do not add packages here. If the App needs a runtime dependency,
-# add it to pyproject.toml in the project root and run `uv sync`.
-#
-# The `uvicorn` and `fastapi` start commands are configured in app.yaml;
-# their packages are already resolved in uv.lock.
+# Bootstrap dependency for the self-contained Agent App artifact.
+# pyproject.toml and uv.lock are packaged beside this file; app.yaml runs
+# `uv run --frozen` so the exact verified runtime graph is preserved.
+uv==0.9.7

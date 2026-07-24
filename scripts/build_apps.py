@@ -39,14 +39,26 @@ APPS: dict[str, dict] = {
         "copy": [
             "agent_core",
             "ecommerce_agent",
+            "pyproject.toml -> pyproject.toml",
+            "uv.lock -> uv.lock",
         ],
         "exclude": {
-            "ecommerce_agent/apps/chat_ui",
-            "ecommerce_agent/apps/mcp_facade",
-            "ecommerce_agent/apps/streamlit_chat_ui",
+            "apps/chat_ui",
+            "apps/mcp_facade",
+            "apps/streamlit_chat_ui",
         },
         "app_yaml": "ecommerce_agent/apps/agent_app/app.yaml",
-        "requirements": "ecommerce_agent/apps/agent_app/requirements.txt",
+        # Agent uses the packaged pyproject.toml + uv.lock at runtime.
+        # Keep the component-owned requirements file inside its package, but
+        # do not copy it to the artifact root where Databricks would run pip.
+        "requirements": None,
+        "required": [
+            "agent_core/__init__.py",
+            "ecommerce_agent/apps/agent_app/server.py",
+            "ecommerce_agent/config.yaml",
+            "pyproject.toml",
+            "uv.lock",
+        ],
     },
     "mcp_facade": {
         "copy": [
@@ -56,6 +68,7 @@ APPS: dict[str, dict] = {
         ],
         "app_yaml": "ecommerce_agent/apps/mcp_facade/app.yaml",
         "requirements": "ecommerce_agent/apps/mcp_facade/requirements.txt",
+        "required": ["server.py", "app_oauth.py", "response_output.py"],
     },
     "streamlit_chat_ui": {
         "copy": [
@@ -63,7 +76,11 @@ APPS: dict[str, dict] = {
             "ecommerce_agent/apps/streamlit_chat_ui -> apps/streamlit_chat_ui",
         ],
         "app_yaml": "ecommerce_agent/apps/streamlit_chat_ui/app.yaml",
-        "requirements": "ecommerce_agent/requirements.txt",
+        "requirements": "ecommerce_agent/apps/streamlit_chat_ui/requirements.txt",
+        "required": [
+            "apps/streamlit_chat_ui/app.py",
+            "conversation/__init__.py",
+        ],
     },
     "chat_ui": {
         "copy": [
@@ -78,8 +95,27 @@ APPS: dict[str, dict] = {
         },
         "app_yaml": "ecommerce_agent/apps/chat_ui/app.yaml",
         "requirements": None,  # Node project — package.json drives install
+        "required": [
+            "package.json",
+            "package-lock.json",
+            "client/src/main.tsx",
+            "server/src/index.ts",
+        ],
     },
 }
+
+IGNORED_NAMES = {
+    ".databricks",
+    ".env",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "node_modules",
+    "playwright-report",
+    "test-results",
+    "tests",
+}
+
 
 # =====================================================================
 def _ensure(path: Path) -> None:
@@ -93,34 +129,36 @@ def _rm(path: Path) -> None:
         path.unlink()
 
 
+def _is_excluded(relative_path: Path, excludes: set[str]) -> bool:
+    """Return whether a source-relative path must stay out of an artifact."""
+
+    parts = relative_path.as_posix().split("/")
+    if any(part in IGNORED_NAMES for part in parts):
+        return True
+    if relative_path.suffix in {".pyc", ".pyo"}:
+        return True
+
+    candidate = relative_path.as_posix()
+    for raw_exclude in excludes:
+        exclude = Path(raw_exclude).as_posix().strip("/")
+        if "/" in exclude:
+            if candidate == exclude or candidate.startswith(f"{exclude}/"):
+                return True
+        elif exclude in parts:
+            return True
+    return False
+
+
 def _build_exclude_filter(src_root: Path, excludes: set[str]):
     """Return an ignore function for shutil.copytree."""
 
     def _ignore(directory: str, files: list[str]) -> list[str]:
-        # directory is the *current* absolute path being walked
-        d = Path(directory)
-        ignored: set[str] = set()
-        for exc in excludes:
-            # Check if the excluded path is inside or matches this directory
-            exc_path = src_root / exc
-            try:
-                # Is this directory an ancestor of the excluded path?
-                d.relative_to(exc_path)
-                # d is inside an excluded path — ignore everything
-                return set(files)
-            except ValueError:
-                pass
-            try:
-                # Is the excluded path inside this directory?
-                exc_path.relative_to(d)
-                # Yes — ignore the top-level name under this directory
-                rel = exc_path.relative_to(d)
-                first = str(rel).replace("\\", "/").split("/")[0]
-                if first in files:
-                    ignored.add(first)
-            except ValueError:
-                pass
-        return list(ignored)
+        current = Path(directory)
+        return [
+            name
+            for name in files
+            if _is_excluded((current / name).relative_to(src_root), excludes)
+        ]
 
     return _ignore
 
@@ -143,33 +181,33 @@ def build_app(name: str, cfg: dict) -> bool:
         src_path = ROOT / src_rel
 
         if not src_path.exists():
-            print(f"  SKIP missing: {src_rel}")
-            continue
+            print(f"  ERROR missing source: {src_rel}")
+            return False
 
         if dst_rel == ".":
             # Flatten: copy each top-level item, skipping excludes
             for item in sorted(src_path.iterdir()):
-                if item.name in excludes:
+                if _is_excluded(Path(item.name), excludes):
                     continue
                 item_dst = app_dir / item.name
                 _rm(item_dst)
                 if item.is_dir():
-                    shutil.copytree(str(item), str(item_dst))
+                    shutil.copytree(
+                        str(item),
+                        str(item_dst),
+                        ignore=_build_exclude_filter(src_path, excludes),
+                    )
                 else:
                     shutil.copy2(str(item), str(item_dst))
             print(f"  flatten: {src_rel}/* -> {app_dir}/")
         elif src_path.is_dir():
             item_dst = app_dir / dst_rel
             _rm(item_dst)
-            if excludes:
-                src_root_for_excludes = ROOT
-                shutil.copytree(
-                    str(src_path),
-                    str(item_dst),
-                    ignore=_build_exclude_filter(src_root_for_excludes, excludes),
-                )
-            else:
-                shutil.copytree(str(src_path), str(item_dst))
+            shutil.copytree(
+                str(src_path),
+                str(item_dst),
+                ignore=_build_exclude_filter(src_path, excludes),
+            )
             print(f"  tree: {src_rel} -> {dst_rel}")
         else:
             item_dst = app_dir / dst_rel
@@ -180,21 +218,28 @@ def build_app(name: str, cfg: dict) -> bool:
 
     # 2. Place app.yaml at deployment root
     app_yaml_src = ROOT / cfg["app_yaml"]
-    if app_yaml_src.exists():
-        shutil.copy2(str(app_yaml_src), str(app_dir / "app.yaml"))
-        print(f"  app.yaml <- {cfg['app_yaml']}")
+    if not app_yaml_src.is_file():
+        print(f"  ERROR missing app.yaml: {cfg['app_yaml']}")
+        return False
+    shutil.copy2(str(app_yaml_src), str(app_dir / "app.yaml"))
+    print(f"  app.yaml <- {cfg['app_yaml']}")
 
     # 3. Place requirements.txt at deployment root
     req = cfg.get("requirements")
     if req:
         req_src = ROOT / req
-        if req_src.exists():
-            shutil.copy2(str(req_src), str(app_dir / "requirements.txt"))
-            print(f"  requirements.txt <- {req}")
+        if not req_src.is_file():
+            print(f"  ERROR missing requirements.txt: {req}")
+            return False
+        shutil.copy2(str(req_src), str(app_dir / "requirements.txt"))
+        print(f"  requirements.txt <- {req}")
 
     # Sanity
-    if not (app_dir / "app.yaml").exists():
-        print(f"  ERROR: no app.yaml in {app_dir}")
+    missing = [
+        path for path in cfg.get("required", []) if not (app_dir / path).is_file()
+    ]
+    if missing:
+        print(f"  ERROR missing required artifact files: {', '.join(missing)}")
         return False
 
     print(f"  OK -> {app_dir}")
@@ -213,8 +258,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    _ensure(BUILD)
     names = list(APPS) if args.app == "all" else [args.app]
+    if args.app == "all":
+        _rm(BUILD)
+    _ensure(BUILD)
 
     ok = True
     for name in names:
