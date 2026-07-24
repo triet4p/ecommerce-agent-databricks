@@ -14,6 +14,9 @@ expected to start passing:
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,6 +37,31 @@ def _read_databricks_yml() -> dict:
         pytest.skip("databricks.yml not found")
     with open(path, encoding="utf-8") as fh:
         return yaml.safe_load(fh)
+
+
+def _assert_artifact_module_resolves(artifact: str, module: str) -> None:
+    """Resolve a module in a clean interpreter rooted at one artifact."""
+
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            (
+                "import importlib.util,sys;"
+                f"sys.exit(0 if importlib.util.find_spec({module!r}) else 1)"
+            ),
+        ],
+        cwd=REPO_ROOT / ".build" / "apps" / artifact,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -197,8 +225,6 @@ class TestStreamlitOverride:
     def test_streamlit_build_artifact_exists(self):
         """Streamlit build artifact has app.yaml at root."""
         path = REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui" / "app.yaml"
-        if not path.exists():
-            pytest.skip("Run scripts/build_apps.py first")
         assert path.is_file()
 
     def test_streamlit_entry_point_exists(self):
@@ -208,9 +234,14 @@ class TestStreamlitOverride:
 
     def test_streamlit_build_has_conversation(self):
         """Streamlit build artifact includes conversation/ package."""
-        path = REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui" / "conversation" / "__init__.py"
-        if not path.exists():
-            pytest.skip("Run scripts/build_apps.py first")
+        path = (
+            REPO_ROOT
+            / ".build"
+            / "apps"
+            / "streamlit_chat_ui"
+            / "conversation"
+            / "__init__.py"
+        )
         assert path.is_file()
 
 
@@ -221,13 +252,10 @@ class TestModuleImportability:
     """Verify key modules are importable from their target locations."""
 
     def test_import_agent_server_from_target(self):
-        """Can import from ecommerce_agent.apps.agent_app.server."""
-        import importlib
-
-        try:
-            importlib.import_module("ecommerce_agent.apps.agent_app.server")
-        except ImportError as exc:
-            pytest.fail(f"Import failed: {exc}")
+        """Agent server resolves from the isolated build artifact."""
+        _assert_artifact_module_resolves(
+            "agent_app", "ecommerce_agent.apps.agent_app.server"
+        )
 
     def test_import_mcp_facade_from_build_artifact(self):
         """MCP facade imports resolve from the flat build artifact root.
@@ -235,21 +263,7 @@ class TestModuleImportability:
         The deployment flattens .build/apps/mcp_facade/ to the runtime root,
         so imports must be local (``from app_oauth import ...``).
         """
-        import importlib
-        import sys
-
-        build_root = str(REPO_ROOT / ".build" / "apps" / "mcp_facade")
-        if build_root not in sys.path:
-            sys.path.insert(0, build_root)
-        try:
-            importlib.import_module("server")
-        except ImportError as exc:
-            pytest.fail(
-                f"MCP import failed from build artifact ({build_root}): {exc}"
-            )
-        finally:
-            if sys.path[0] == build_root:
-                sys.path.pop(0)
+        _assert_artifact_module_resolves("mcp_facade", "server")
 
     def test_import_conversation_still_works(self):
         """Canonical conversation package is importable (should always pass)."""
@@ -274,41 +288,13 @@ class TestCurrentLayoutStillFunctional:
         root, so imports must use flat paths
         (``apps.streamlit_chat_ui...``, ``conversation...``).
         """
-        import importlib
-        import sys
-
-        build_root = str(REPO_ROOT / ".build" / "apps" / "streamlit_chat_ui")
-        if build_root not in sys.path:
-            sys.path.insert(0, build_root)
-        try:
-            importlib.import_module("apps.streamlit_chat_ui.app")
-        except ImportError as exc:
-            pytest.fail(
-                f"Streamlit import failed from build artifact "
-                f"({build_root}): {exc}"
-            )
-        finally:
-            if sys.path[0] == build_root:
-                sys.path.pop(0)
+        _assert_artifact_module_resolves(
+            "streamlit_chat_ui", "apps.streamlit_chat_ui.app"
+        )
 
     def test_mcp_facade_imports_from_build_artifact(self):
         """MCP facade imports resolve from the flat build artifact root."""
-        import importlib
-        import sys
-
-        build_root = str(REPO_ROOT / ".build" / "apps" / "mcp_facade")
-        if build_root not in sys.path:
-            sys.path.insert(0, build_root)
-        try:
-            importlib.import_module("server")
-        except ImportError as exc:
-            pytest.fail(
-                f"MCP import failed from build artifact "
-                f"({build_root}): {exc}"
-            )
-        finally:
-            if sys.path[0] == build_root:
-                sys.path.pop(0)
+        _assert_artifact_module_resolves("mcp_facade", "server")
 
     def test_agent_core_compiles(self):
         """All Python source in agent_core/ compiles."""

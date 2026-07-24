@@ -71,15 +71,29 @@ ALLOWED_CHANGE_PATTERNS = [
 # that must reference new paths).
 UNCONDITIONAL_ALLOW: set[str] = {
     "databricks.yml",
-    "app.yaml",
-    "ecommerce_agent/agent_app/app.yaml",
-    "ecommerce_agent/apps/mcp_server/app.yaml",
-    "chat_ui/app.yaml",
+    "ecommerce_agent/apps/agent_app/app.yaml",
+    "ecommerce_agent/apps/chat_ui/app.yaml",
+    "ecommerce_agent/apps/chat_ui/client/index.html",
+    "ecommerce_agent/apps/mcp_facade/server.py",
+    "ecommerce_agent/apps/agent_app/server.py",
     "pyproject.toml",
+    # Manually reviewed during S5-12/S5-19. These are path, packaging, or
+    # contract-test adjustments required by the flattened App source roots.
+    "tests/ecommerce_agent/test_agent_server_contract.py",
+    "tests/ecommerce_agent/test_app_api_contract.py",
+    "tests/ecommerce_agent/test_app_oauth.py",
+    "tests/ecommerce_agent/test_app_response_output.py",
+    "tests/ecommerce_agent/test_bundle_contract.py",
+    "tests/ecommerce_agent/test_retriever_warmup.py",
+    "tests/ecommerce_agent/test_stream_security.py",
 }
 
 # File suffixes whose content changes are unconditionally permitted.
 UNCONDITIONAL_SUFFIXES: set[str] = {".md", ".txt"}
+
+# Obsolete aggregate manifests intentionally removed after every deployable
+# component received its own self-contained app artifact.
+PLANNED_REMOVALS: set[str] = {"app.yaml", "ecommerce_agent/app.yaml"}
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +129,7 @@ def _generate_manifest(root: Path) -> dict[str, str]:
         ".ruff_cache",
         "mlruns",
         ".databricks",
+        ".build",
         "artifacts",
         "playwright-report",
         "test-results",
@@ -123,12 +138,19 @@ def _generate_manifest(root: Path) -> dict[str, str]:
         ".vscode",
         ".claude",  # tooling, not deployable source
     }
-    EXCLUDE_FILES = {"uv.lock", "mlflow.db", "package-lock.json"}
+    EXCLUDE_FILES = {".env", "uv.lock", "mlflow.db", "package-lock.json"}
 
     entries: dict[str, str] = {}
     for dirpath, dirnames, filenames in os.walk(root):
         # Prune excluded directories
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if d not in EXCLUDE_DIRS
+            and not d.startswith(
+                (".pytest-cache-", ".uv-cache-", ".tmp-", "codex-tmp-")
+            )
+        ]
 
         # Skip hidden directories not in the explicit set
         rel_dir = os.path.relpath(dirpath, root)
@@ -261,6 +283,8 @@ def main() -> int:
     for old_path, new_path in old_to_new.items():
         if _is_build_artifact(old_path):
             continue  # generated files are not source — skip
+        if old_path in PLANNED_REMOVALS:
+            continue
         if new_path not in current and old_path not in current:
             violations.append(
                 f"MISSING: '{old_path}' -> '{new_path}' (neither old "
@@ -278,7 +302,10 @@ def main() -> int:
             if old_hash != baseline_hash:
                 # Content changed at old location — check allowlist
                 path = Path(args.current) / old_path
-                if path.suffix not in UNCONDITIONAL_SUFFIXES:
+                if (
+                    old_path not in UNCONDITIONAL_ALLOW
+                    and path.suffix not in UNCONDITIONAL_SUFFIXES
+                ):
                     _check_content_violation(
                         path, old_path, baseline_hash, old_hash, violations, args
                     )

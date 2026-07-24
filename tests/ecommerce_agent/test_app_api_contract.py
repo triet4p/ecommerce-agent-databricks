@@ -46,6 +46,15 @@ def test_app_to_app_consumers_use_authenticated_api_prefix() -> None:
         assert '"{agent_app_url}/responses"' not in source
 
 
+def test_mcp_runtime_binds_to_databricks_app_host_and_port() -> None:
+    source = (ROOT / "ecommerce_agent" / "apps" / "mcp_facade" / "server.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'host="0.0.0.0"' in source
+    assert 'os.environ.get("DATABRICKS_APP_PORT", "8000")' in source
+
+
 def test_retriever_budget_fits_inside_databricks_apps_proxy_limit() -> None:
     """Retrieval must leave time for the model/tool loop under the 120s proxy."""
     config = (ROOT / "ecommerce_agent" / "config.yaml").read_text(encoding="utf-8")

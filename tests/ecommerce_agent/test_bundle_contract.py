@@ -43,6 +43,15 @@ def test_agent_app_uses_locked_uv_dependencies_and_serverless_port():
     app_yaml = ROOT / "ecommerce_agent" / "apps" / "agent_app" / "app.yaml"
     app_config = yaml.safe_load(app_yaml.read_text(encoding="utf-8"))
 
-    assert app_config["command"][:2] == ["uvicorn", "ecommerce_agent.apps.agent_app.server:app"]
-    assert app_config["command"][2] == "--host"
-    assert (ROOT / "ecommerce_agent" / "apps" / "agent_app" / "requirements.txt").exists()
+    command = " ".join(app_config["command"])
+    assert (
+        "exec uv run --frozen uvicorn ecommerce_agent.apps.agent_app.server:app"
+        in command
+    )
+    assert "--host 0.0.0.0" in command
+    assert "DATABRICKS_APP_PORT" in command
+
+    requirements = (
+        ROOT / "ecommerce_agent" / "apps" / "agent_app" / "requirements.txt"
+    ).read_text(encoding="utf-8")
+    assert "uv==0.9.7" in requirements
